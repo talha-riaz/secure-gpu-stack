@@ -632,7 +632,8 @@ def pkg_sources_signed(h):
     insecure = [l for l in lines if re.search(r"trusted=yes|allow-insecure=yes|allow-weak=yes|^Trusted:\s*yes", l, re.I)]
     urls = sorted({u for l in lines for u in re.findall(r"https?://[^\s\]]+", l)})
     third_party = [u for u in urls if not re.search(r"(archive|security|ports)\.ubuntu\.com|esm\.ubuntu\.com", u)]
-    detail = ("third-party: " + short_list(third_party, 4)) if third_party else "Ubuntu archives only"
+    # Listed in full: every third-party repo is a vendor trusted to run code as root.
+    detail = ("%d third-party: %s" % (len(third_party), ", ".join(third_party))) if third_party else "Ubuntu archives only"
     if insecure:
         return Result(FAIL, "%d unverified" % len(insecure), "; ".join(insecure[:3]))
     return Result(PASS, "all signed", detail)
@@ -898,8 +899,8 @@ def build_markdown(before, after, rb, ra):
             out += ["", "## %s" % area, "", "| Check | Before | After | Why it matters |", "|---|---|---|---|"]
         b, a = rb[c.id], ra[c.id]
         title = "**%s**<br><sub>evidence: %s</sub>" % (md_escape(c.title), ", ".join(c.evidence))
-        after_cell = cell(a) + ("<br><sub>%s</sub>" % md_escape(a.detail) if a.detail and a.status != PASS else "")
-        before_cell = cell(b) + ("<br><sub>%s</sub>" % md_escape(b.detail) if b.detail and b.status in (FAIL, WARN) else "")
+        after_cell = cell(a) + ("<br><sub>%s</sub>" % md_escape(a.detail) if a.detail else "")
+        before_cell = cell(b) + ("<br><sub>%s</sub>" % md_escape(b.detail) if b.detail else "")
         out.append("| %s | %s | %s | %s |" % (title, before_cell, after_cell, md_escape(c.why)))
     out += ["", "## Notes", ""] + ["- " + n for n in NOTES]
     out += ["", "_Generated %s by `audit/report.py`._" % datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), ""]
@@ -926,17 +927,20 @@ h1 { font-size:26px; margin:0 0 4px; } h2 { font-size:18px; margin:36px 0 10px; 
         display:flex; flex-direction:column; }
 .tile .k { color:var(--muted); font-size:13px; line-height:1.35; }
 .tile .v { font-size:30px; font-weight:650; line-height:1.15; margin:8px 0 12px; font-variant-numeric:tabular-nums; }
-.tile .was { margin-top:auto; padding-top:10px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+.tile .was { margin-top:auto; padding-top:10px; border-top:1px solid var(--line); color:var(--muted); font-size:15px; }
 .tile .was b { color:var(--fg); font-weight:600; }
 .tiles-note { color:var(--muted); font-size:13px; margin:10px 0 0; }
 .scroll { overflow-x:auto; }
 table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line);
         border-radius:10px; overflow:hidden; font-size:14px; }
-th, td { text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line); }
+th, td { text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+/* Same column widths in every section; on narrow screens the table scrolls sideways. */
+table.checks { table-layout:fixed; min-width:760px; }
+col.c-check { width:28%; } col.c-state { width:25%; } col.c-why { width:22%; }
 th { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:600; }
 tr:last-child td { border-bottom:none; }
-td.title { width:30%; font-weight:600; } td.title small, td small { display:block; font-weight:400; color:var(--muted); margin-top:3px; }
-td.why { color:var(--muted); width:28%; }
+td.title { font-weight:600; } td.title small, td small { display:block; font-weight:400; color:var(--muted); margin-top:3px; }
+td.why { color:var(--muted); }
 .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:13px; font-weight:600; white-space:nowrap; }
 .pass { color:var(--pass); background:var(--pass-bg); } .fail { color:var(--fail); background:var(--fail-bg); }
 .warn { color:var(--warn); background:var(--warn-bg); } .info { color:var(--info); background:var(--info-bg); }
@@ -973,15 +977,17 @@ def build_html(before, after, rb, ra):
             if area is not None:
                 p.append("</tbody></table></div>")
             area = c.area
-            p += ["<h2>%s</h2><div class='scroll'><table><thead><tr><th>Check</th><th>Before</th><th>After</th>"
+            p += ["<h2>%s</h2><div class='scroll'><table class='checks'><colgroup><col class='c-check'><col class='c-state'>"
+                  "<col class='c-state'><col class='c-why'></colgroup><thead><tr><th>Check</th><th>Before</th><th>After</th>"
                   "<th>Why it matters</th></tr></thead><tbody>" % e(area)]
         b, a = rb[c.id], ra[c.id]
-        bd = "<small>%s</small>" % e(b.detail) if b.detail and b.status in (FAIL, WARN) else ""
-        ad = "<small>%s</small>" % e(a.detail) if a.detail and a.status != PASS else ""
+        bd = "<small>%s</small>" % e(b.detail) if b.detail else ""
+        ad = "<small>%s</small>" % e(a.detail) if a.detail else ""
         p.append("<tr><td class='title'>%s<small>evidence: %s</small></td><td>%s%s</td><td>%s%s</td><td class='why'>%s</td></tr>"
                  % (e(c.title), e(", ".join(c.evidence)), badge(b), bd, badge(a), ad, e(c.why)))
     p.append("</tbody></table></div>")
-    p.append("<h2>Machines compared</h2><div class='scroll'><table><thead><tr><th></th><th>Before</th><th>After</th></tr></thead><tbody>")
+    p.append("<h2>Machines compared</h2><div class='scroll'><table class='checks'><colgroup><col class='c-check'><col><col>"
+             "</colgroup><thead><tr><th></th><th>Before</th><th>After</th></tr></thead><tbody>")
     for key, label in (("hostname", "Host"), ("os", "OS"), ("kernel", "Kernel"), ("gpu", "GPU"), ("collected_at", "Collected"),
                        ("sgs_installed", "Secure GPU Stack installed"), ("sgs_version", "Version")):
         p.append("<tr><td class='title'>%s</td><td>%s</td><td>%s</td></tr>" % (e(label), e(before.meta.get(key, "?")), e(after.meta.get(key, "?"))))
