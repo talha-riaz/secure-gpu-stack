@@ -93,18 +93,36 @@ What it deliberately does **not** do:
 
 ## Install
 
-On a fresh Lambda instance (Ubuntu 22.04 with Lambda Stack), as the `ubuntu` user:
+**You need:**
+- a Lambda instance (Lambda Stack, Ubuntu 22.04) launched with your SSH key;
+- Google Authenticator or Microsoft Authenticator on your phone;
+- `ssh` and Python 3 on your laptop (only for the measurements; no packages needed).
+
+**1. Copy the repository to the instance** (from your laptop):
 
 ```bash
-git clone <this repository> secure-gpu-stack && cd secure-gpu-stack
-sudo ./install.sh --dry-run    # optional: show every change, apply nothing
-sudo ./install.sh              # scan the QR code with Google or Microsoft Authenticator, type one code
+scp -r secure-gpu-stack ubuntu@<ip>:          # or, on the instance: git clone <repository URL> secure-gpu-stack
 ```
 
-Keep that session open. In a new terminal, `ssh ubuntu@<ip>` should now ask for `Verification code:`. A full
-install takes a few minutes, most of it applying the security updates. Running it again changes nothing
-([proof](evidence/lambda-a10/after/install_rerun.log)). `./install.sh --list`, `--only` and `--skip` select
-modules.
+**2. Install** (on the instance, as `ubuntu`):
+
+```bash
+ssh ubuntu@<ip>
+cd secure-gpu-stack
+sudo ./install.sh --dry-run    # optional: show every change, apply nothing
+sudo ./install.sh              # about 5 minutes; scan the QR code with your app and type the code it shows
+```
+
+**3. Check** before you close that session. Lambda has no recovery console, so a lockout would mean losing the
+instance. Keep the session open and, in a **new** terminal:
+
+```bash
+ssh ubuntu@<ip>                # now asks "Verification code:" after the key
+```
+
+Store the emergency codes the installer printed. Running `sudo ./install.sh` again changes nothing
+([proof](evidence/lambda-a10/after/install_rerun.log)). `./install.sh --list` shows the modules; `--only` and
+`--skip` select them.
 
 | Setting | Effect |
 |---|---|
@@ -122,8 +140,15 @@ Pass them through sudo, for example `sudo SGS_ALLOW_PORTS=443/tcp ./install.sh`.
 ```bash
 sudo sgs-enroll alice                      # alice scans the QR shown here (in person or on a call); no code, no login
 sudo sgs-enroll alice --force              # lost phone: new secret (or use an emergency code)
-ssh -L 8888:localhost:8888 ubuntu@<ip>     # Jupyter/TensorBoard: bind to 127.0.0.1, tunnel over SSH
 sgs-scan-model ./downloaded-model.bin      # check a checkpoint before loading it
+```
+
+**Jupyter or TensorBoard** listen on localhost and are reached through SSH, so they sit behind the key and the
+code:
+
+```bash
+jupyter lab --no-browser --ip 127.0.0.1 --port 8888   # on the instance
+ssh -L 8888:localhost:8888 ubuntu@<ip>                # on your laptop, then open http://localhost:8888
 ```
 
 **Maintenance window** for the held kernel, driver and CUDA updates. This is what produced the
@@ -131,33 +156,65 @@ sgs-scan-model ./downloaded-model.bin      # check a checkpoint before loading i
 
 ```bash
 sudo SGS_PATCH_ALL=1 ./install.sh --only updates && sudo reboot
-nvidia-smi && bash -lc 'python3 tests/gpu_smoke.py'    # GPU back? then remove the previous kernel
+nvidia-smi && bash -lc 'python3 tests/gpu_smoke.py'   # after the reboot: GPU and the ML protections working?
+dpkg -l 'linux-*<previous kernel version>*'           # then remove the old kernel's packages with sudo apt-get purge
 ```
 
 ## Measure it yourself
 
+**From the evidence in this repository** (no instance needed):
+
 ```bash
-sudo ./audit/run_audit.sh before                              # on the stock instance (add --sbom for a CycloneDX SBOM)
-python3 audit/external_scan.py <ip> --out <results>/external.json   # from your laptop: what the internet sees
-sudo ./install.sh
-sudo ./audit/run_audit.sh after
-python3 audit/report.py <before-results> <after-results> -o report  # writes report.md and report.html
+python3 audit/report.py evidence/lambda-a10/before evidence/lambda-a10/after -o report   # writes report.md and report.html
 ```
+
+**On your own instance**, before and after installing. The audit runs on the instance, the external scan from
+your laptop, and the report wherever both results are:
+
+```bash
+# on the instance, BEFORE ./install.sh
+sudo ./audit/demo_services.sh start                     # optional: two deliberately exposed services for the firewall to block
+sudo ./audit/run_audit.sh before --out ~/sgs-before     # about 10 minutes; --no-trivy skips the CVE scan
+
+# on your laptop
+scp -r ubuntu@<ip>:sgs-before .
+python3 secure-gpu-stack/audit/external_scan.py <ip> --out sgs-before/external.json
+
+# on the instance
+sudo ./install.sh
+sudo ./audit/run_audit.sh after --out ~/sgs-after
+
+# on your laptop (copying now asks for the code)
+scp -r ubuntu@<ip>:sgs-after .
+python3 secure-gpu-stack/audit/external_scan.py <ip> --out sgs-after/external.json
+python3 secure-gpu-stack/audit/report.py sgs-before sgs-after -o report
+```
+
+Lambda's default cloud firewall only lets port 22 through, so the external scan looks the same before and after.
+To measure the host firewall, as the evidence does, add a cloud firewall ruleset that allows all TCP from your IP
+only.
 
 **What the audit does:**
 - It only collects; it changes no security setting.
 - It installs pinned, checksum-verified scanners (Trivy, ssh-audit) plus Lynis.
 - [`report.py`](audit/report.py) judges 37 checks (33 scored, 4 informational) from the raw files, and names the
   files each check read.
-- [`audit/demo_services.sh`](audit/demo_services.sh) starts two deliberately exposed stand-in services, so a
-  firewall test has something to block.
 
-To reproduce the report in this repository from the raw evidence:
-`python3 audit/report.py evidence/lambda-a10/before evidence/lambda-a10/after`.
+**No GPU needed:** a local Ubuntu 22.04 VM through [Lima](https://lima-vm.io) (`brew install lima` on macOS)
+shows everything except the GPU parts.
 
-**No GPU needed** to try it: [`tests/lima/create_vm.sh`](tests/lima/create_vm.sh) builds a local Ubuntu 22.04 VM
-(macOS or Linux, via Lima), and [`tests/lima/iterate.sh`](tests/lima/iterate.sh) runs install → audit → report
-against it.
+```bash
+tests/lima/create_vm.sh sgs-test                      # prints the VM's IP and an ssh command with a test key
+limactl copy -r . sgs-test:/tmp/secure-gpu-stack
+limactl shell sgs-test                                # then, inside the VM:
+  sudo cp -r /tmp/secure-gpu-stack /opt/ && cd /opt/secure-gpu-stack && sudo ./install.sh --user ubuntu
+ssh -i tests/lima/.keys/test_key -o IdentitiesOnly=yes ubuntu@<vm-ip>   # from your laptop: asks for the code
+```
+
+Lima manages the VM through your own account, so the test VM exempts that one account from MFA. The installer and
+the audit both flag it, which also shows the exempt-account check working. Once `ubuntu` is enrolled on
+`sgs-test`, and a second VM `sgs-stock` exists as the untouched baseline,
+[`tests/lima/iterate.sh`](tests/lima/iterate.sh) runs a full install → audit → report round in one command.
 
 ## Design decisions
 
