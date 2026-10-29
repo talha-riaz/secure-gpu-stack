@@ -2,6 +2,10 @@
 #
 # - Installs pending security updates now, with unattended-upgrade itself, so the policy
 #   applied at install time is exactly the one that runs every day afterwards.
+# - Also auto-updates the container runtime and other security-relevant third-party repos
+#   (Docker, NVIDIA Container Toolkit, cloudflared): container escapes live there, and
+#   Ubuntu's security pocket never covers them. Lambda's own repo (PyTorch, CUDA) stays
+#   manual: upgrading research libraries under running work can break it.
 # - Holds the kernel, the NVIDIA driver and CUDA/cuDNN/NCCL back from automatic upgrades.
 #   Upgrading the driver's libraries under a loaded kernel module breaks every new GPU
 #   process ("Driver/library version mismatch") until a reboot, and a kernel without
@@ -13,11 +17,21 @@
 UU_CONF=/etc/apt/apt.conf.d/52secure-gpu-stack-updates
 : "${SGS_PATCH_ALL:=0}"   # 1 = also upgrade the held kernel/GPU packages now (reboot needed)
 
+# Third-party origins (apt-cache policy: o=..., a=...) whose updates install automatically.
+# shellcheck disable=SC2016  # ${distro_codename} is expanded by unattended-upgrades
+EXTRA_ORIGINS=(
+  'origin=Docker,archive=${distro_codename},label=Docker CE'
+  'origin=https://nvidia.github.io/libnvidia-container/stable'
+  'origin=cloudflared,codename=${distro_codename}'
+)
+
 # Python regexes matched from the start of package names (unattended-upgrades semantics).
+# The container toolkit (nvidia-container-*, libnvidia-container*) is excluded from the
+# NVIDIA hold: it is user space, independent of the driver, and patches container escapes.
 HOLD_PATTERNS=(
   'linux-image-' 'linux-headers-' 'linux-modules-' 'linux-tools-' 'linux-objects-nvidia-'
   'linux-signatures-nvidia-' 'linux-nvidia' 'linux-generic' 'linux-virtual' 'linux-aws' 'linux-gcp'
-  'nvidia-' 'libnvidia-' 'cuda' 'libcuda' 'libcudnn' 'libnccl' 'libcuinj' 'lambda-stack'
+  'nvidia-(?!container)' 'libnvidia-(?!container)' 'cuda' 'libcuda' 'libcudnn' 'libnccl' 'libcuinj' 'lambda-stack'
   'libcu(blas|fft|rand|solver|sparse|pti|tensor|file)' 'libnv(rtc|jitlink|toolsext|infer|jpeg|blas|vm|sdm)'
 )
 
@@ -42,6 +56,12 @@ write_update_policy() {
     echo "// One dpkg transaction instead of one per package group: a fresh image can carry"
     echo "// hundreds of pending updates, and per-step hooks made that take hours."
     echo 'Unattended-Upgrade::MinimalSteps "false";'
+    echo "// Security-relevant third-party repos: container runtime, NVIDIA toolkit, cloudflared."
+    echo "Unattended-Upgrade::Origins-Pattern {"
+    for p in "${EXTRA_ORIGINS[@]}"; do
+      echo "    \"$p\";"
+    done
+    echo "};"
     echo "// Kernel + NVIDIA driver + CUDA move together, in a planned window with a reboot."
     echo "Unattended-Upgrade::Package-Blacklist {"
     for p in "${HOLD_PATTERNS[@]}"; do
@@ -68,14 +88,13 @@ apply_held_updates() {
 }
 
 report_pending() {
-  local pending held=0 other=0 pkg p
+  local pending held other
   pending=$(apt-get -s -o Debug::NoLocking=1 dist-upgrade 2>/dev/null | awk '/^Inst / && /-security/ { print $2 }')
-  for pkg in $pending; do
-    for p in "${HOLD_PATTERNS[@]}"; do
-      if [[ $pkg =~ ^$p ]]; then held=$((held + 1)); continue 2; fi
-    done
-    other=$((other + 1))
-  done
+  held=$(printf '%s\n' "$pending" | python3 -c '
+import re, sys
+patterns = sys.argv[1:]
+print(sum(1 for pkg in sys.stdin.read().split() if any(re.match(p, pkg) for p in patterns)))' "${HOLD_PATTERNS[@]}")
+  other=$(( $(printf '%s\n' "$pending" | grep -c .) - held ))
   if ((other)); then
     warn "$other security update(s) still pending outside the held set; check: sudo unattended-upgrade -v --dry-run"
   else

@@ -470,7 +470,8 @@ def pkg_auto_updates(h):
        ["gpu_packages.txt", "apt_holds.txt", "apt_preferences.txt"])
 def pkg_gpu_pinned(h):
     # lambda-repository only carries the repository signing key: not part of the GPU stack.
-    pkgs = [l.split("\t")[0] for l in h.lines("gpu_packages.txt") if "\t" in l and not l.startswith("lambda-repository")]
+    pkgs = [l.split("\t")[0] for l in h.lines("gpu_packages.txt")
+            if "\t" in l and not l.startswith("lambda-repository") and "nvidia-container" not in l]
     if not pkgs:
         return Result(NA, "no NVIDIA/CUDA packages")
     holds = set(h.lines("apt_holds.txt"))
@@ -725,11 +726,12 @@ def log_ssh_verbose(h):
 
 # ----------------------------------------------------------- vulnerabilities
 
-def vuln_result(h, cls):
+def vuln_result(h, cls, types=None, exclude_types=None):
     rows = h.vulns()
     if rows is None:
         return Result(NA, "not scanned")
-    rows = [r for r in rows if r["class"] == cls and r["severity"] in HIGH]
+    rows = [r for r in rows if r["class"] == cls and r["severity"] in HIGH
+            and (types is None or r["type"] in types) and (exclude_types is None or r["type"] not in exclude_types)]
     # Kernel fixes need a new kernel + reboot and, on a GPU box, matching NVIDIA modules:
     # a maintenance-window decision, so they are counted apart from everything else.
     kernel = {r["id"] for r in rows if r["status"] == "fixed" and r["pkg"].startswith("linux-")}
@@ -755,11 +757,18 @@ def vuln_os(h):
     return vuln_result(h, "os-pkgs")
 
 
-@check("Vulnerabilities", "Python and other libraries: fixable critical/high CVEs (Trivy)",
-       "ML libraries and bundled binaries; upgrades here can break research code, so they are triaged, not auto-applied.",
+@check("Vulnerabilities", "Bundled binaries (Docker, containerd, cloudflared, ...): fixable critical/high CVEs (Trivy)",
+       "Go and other compiled tools from third-party repos; the container runtime is where escapes live.",
        ["trivy_summary.json"])
-def vuln_lang(h):
-    return vuln_result(h, "lang-pkgs")
+def vuln_binaries(h):
+    return vuln_result(h, "lang-pkgs", exclude_types=("python-pkg",))
+
+
+@check("Vulnerabilities", "Python packages: fixable critical/high CVEs (Trivy)",
+       "ML and research libraries; upgrading them can break experiments, so they are triaged, not auto-applied.",
+       ["trivy_summary.json"])
+def vuln_python(h):
+    return vuln_result(h, "lang-pkgs", types=("python-pkg",))
 
 
 @check("Vulnerabilities", "Lynis hardening index",
@@ -783,7 +792,8 @@ HEADLINE = [
     ("net_docker_bypass", "Docker bypasses the firewall?", lambda r: "no" if r.status == PASS else "yes" if r.status == FAIL else r.value),
     ("pkg_security_updates", "Pending security updates", lambda r: str(r.num) if r.num is not None else r.value),
     ("vuln_os", "Fixable critical/high CVEs (OS)", lambda r: r.value.replace(" fixable critical/high", "")),
-    ("vuln_lang", "Fixable critical/high CVEs (libraries)", lambda r: str(r.num) if r.num is not None else r.value),
+    ("vuln_binaries", "Fixable critical/high CVEs (Docker & other binaries)", lambda r: str(r.num) if r.num is not None else r.value),
+    ("vuln_python", "Fixable critical/high CVEs (Python packages)", lambda r: str(r.num) if r.num is not None else r.value),
     ("ssh_crypto", "ssh-audit findings", lambda r: r.value),
     ("lynis_index", "Lynis hardening index", lambda r: r.value),
 ]
@@ -800,7 +810,8 @@ NOTES = [
     "Counts that depend on the day (pending updates, CVEs) drift as the image and vulnerability databases are updated; "
     "the security posture itself reproduces.",
     "Vulnerability counts are unique CVE IDs rated critical or high by Trivy that already have a fixed version. "
-    "Library CVEs are reported for triage: upgrading ML libraries can break research code, so the stack does not auto-upgrade them.",
+    "Python package CVEs are reported for triage: upgrading ML libraries can break research code, so the stack does not "
+    "auto-upgrade them. Container runtime and other third-party binaries are auto-updated.",
     "Lynis is a broad heuristic; it is shown for context, not used as the measure of success.",
 ]
 
