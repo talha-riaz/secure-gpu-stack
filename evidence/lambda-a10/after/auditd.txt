@@ -21,3 +21,4 @@ active
 -a always,exit -F arch=b64 -S init_module,delete_module,finit_module -F key=kernel_modules
 -a always,exit -F arch=b64 -S adjtimex,settimeofday,clock_settime -F auid>=1000 -F auid!=-1 -F key=time_change
 -w /root/.ssh -p wa -k ssh_keys
+-w /home/ubuntu/.ssh -p wa -k ssh_keys

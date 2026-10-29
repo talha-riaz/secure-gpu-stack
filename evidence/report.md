@@ -5,9 +5,9 @@
 | Host | 132-145-167-169 | 132-145-167-169 |
 | OS | Ubuntu 22.04.5 LTS | Ubuntu 22.04.5 LTS |
 | GPU | NVIDIA A10 | NVIDIA A10 |
-| Collected | 2026-10-29T19:47:07+00:00 | 2026-10-29T21:30:56+00:00 |
+| Collected | 2026-10-29T19:47:07+00:00 | 2026-10-29T22:48:24+00:00 |
 | Secure GPU Stack installed | no | yes |
-| Version | unknown | 192aba1 |
+| Version | unknown | ccdfae7 |
 | Results | `before` | `after` |
 
 ## Headline
@@ -50,7 +50,7 @@ _CVE counts are unique critical/high CVEs (Trivy) that already have a fixed vers
 | **Host firewall denies inbound by default**<br><sub>evidence: ufw.txt</sub> | ❌ inactive | ✅ deny by default; open: 22/tcp | Anything that starts listening later (Jupyter, a debug server) stays unreachable. |
 | **Docker can't bypass the firewall**<br><sub>evidence: iptables_filter.txt, docker_version.txt</sub> | ❌ published ports bypass the firewall | ✅ outside traffic to containers dropped | Docker routes published ports around ufw; without DOCKER-USER rules `docker run -p` is public. |
 | **Docker publishes on localhost by default**<br><sub>evidence: docker_daemon.json</sub> | ⚠️ all interfaces<br><sub>daemon.json has no "ip": "127.0.0.1"</sub> | ✅ 127.0.0.1 | `docker run -p 8888:8888` should not mean 'open to the internet'. |
-| **Brute-force IPs banned (fail2ban)**<br><sub>evidence: fail2ban.txt</sub> | ❌ not running | ✅ sshd jail active<br><sub>banned now: 1, total: 2</sub> | Cuts off scanners after a few failures instead of letting them try forever. |
+| **Brute-force IPs banned (fail2ban)**<br><sub>evidence: fail2ban.txt</sub> | ❌ not running | ✅ sshd jail active<br><sub>banned now: 0, total: 0</sub> | Cuts off scanners after a few failures instead of letting them try forever. |
 | **Services listening on all interfaces (host view)**<br><sub>evidence: listening.txt</sub> | ℹ️ 4 TCP port(s)<br><sub>22 sshd, 111 rpcbind, 8000 python3, 8080 docker-proxy</sub> | ℹ️ 4 TCP port(s)<br><sub>22 sshd, 111 rpcbind, 8000 python3, 8080 docker-proxy</sub> | Listening is not the same as reachable, but each one is exposure the firewall must cover. |
 
 ## Patching
@@ -92,7 +92,7 @@ _CVE counts are unique critical/high CVEs (Trivy) that already have a fixed vers
 
 | Check | Before | After | Why it matters |
 |---|---|---|---|
-| **Audit trail of security-relevant actions (auditd)**<br><sub>evidence: auditd.txt</sub> | ❌ not running | ✅ 22 rules | Records who changed SSH/PAM/sudo config, touched secrets or keys, or ran root commands. |
+| **Audit trail of security-relevant actions (auditd)**<br><sub>evidence: auditd.txt</sub> | ❌ not running | ✅ 23 rules | Records who changed SSH/PAM/sudo config, touched secrets or keys, or ran root commands. |
 | **Logs survive a reboot (persistent journal)**<br><sub>evidence: journald.txt</sub> | ✅ persistent | ✅ persistent | Evidence of an intrusion shouldn't vanish with a restart. |
 | **SSH logs record which key logged in**<br><sub>evidence: sshd_T.txt</sub> | ⚠️ INFO | ✅ VERBOSE | LogLevel VERBOSE logs the key fingerprint, so a login can be traced to a specific key. |
 
@@ -115,4 +115,4 @@ _CVE counts are unique critical/high CVEs (Trivy) that already have a fixed vers
 - Vulnerability counts are unique CVE IDs rated critical or high by Trivy that already have a fixed version. Python package CVEs are reported for triage: upgrading ML libraries can break research code, so the stack does not auto-upgrade them. Container runtime and other third-party binaries are auto-updated.
 - Lynis is a broad heuristic; it is shown for context, not used as the measure of success.
 
-_Generated 2026-10-29 18:36 by `audit/report.py`._
+_Generated 2026-10-29 18:49 by `audit/report.py`._

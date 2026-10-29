@@ -1,0 +1,37 @@
+# after a second reboot, running ccdfae7, 2026-10-29T22:47:55Z
+kernel: 6.8.0-1064-nvidia
+boot_id: 7e42cf4a-521d-4218-941e-5a64c7dbdbeb
+uptime: up 3 minutes
+
+## Audit rules (the ~/.ssh watch was missing after the first reboot)
+loaded: 23 of 23 expected
+-w /root/.ssh -p wa -k ssh_keys
+-w /home/ubuntu/.ssh -p wa -k ssh_keys
+reload unit: success, ran at Thu 2026-10-29 22:44:29 UTC
+
+## Kernel settings (fs.protected_fifos reverted after the first reboot)
+99-secure-gpu-stack.conf
+fs.protected_fifos = 2
+fs.protected_regular = 2
+kernel.kptr_restrict = 2
+net.ipv4.conf.all.log_martians = 1
+
+## SSH MFA
+maxsessions 1
+permitrootlogin no
+passwordauthentication no
+authenticationmethods publickey,keyboard-interactive
+
+## Firewall
+Status: active
+DOCKER-USER drop: 1
+fail2ban: active
+
+## Browser IDE and tunnel
+lambda-jupyter: masked / inactive
+cloudflared: masked / inactive
+cloudflared-update: masked / inactive
+600 /etc/cloudflared/jupyter-tunnel.json
+
+## GPU
+NVIDIA A10, 580.105.08

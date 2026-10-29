@@ -46,39 +46,39 @@ apparmor module is loaded.
 0 profiles are in unconfined mode.
 33 processes have profiles defined.
 33 processes are in enforce mode.
-   /usr/sbin/chronyd (1396) 
-   /usr/sbin/chronyd (1397) 
-   /usr/sbin/nginx (64624) docker-default
-   /usr/sbin/nginx (64756) docker-default
-   /usr/sbin/nginx (64757) docker-default
-   /usr/sbin/nginx (64758) docker-default
-   /usr/sbin/nginx (64759) docker-default
-   /usr/sbin/nginx (64760) docker-default
-   /usr/sbin/nginx (64761) docker-default
-   /usr/sbin/nginx (64762) docker-default
-   /usr/sbin/nginx (64763) docker-default
-   /usr/sbin/nginx (64764) docker-default
-   /usr/sbin/nginx (64765) docker-default
-   /usr/sbin/nginx (64766) docker-default
-   /usr/sbin/nginx (64767) docker-default
-   /usr/sbin/nginx (64768) docker-default
-   /usr/sbin/nginx (64769) docker-default
-   /usr/sbin/nginx (64770) docker-default
-   /usr/sbin/nginx (64771) docker-default
-   /usr/sbin/nginx (64772) docker-default
-   /usr/sbin/nginx (64773) docker-default
-   /usr/sbin/nginx (64774) docker-default
-   /usr/sbin/nginx (64775) docker-default
-   /usr/sbin/nginx (64776) docker-default
-   /usr/sbin/nginx (64777) docker-default
-   /usr/sbin/nginx (64778) docker-default
-   /usr/sbin/nginx (64779) docker-default
-   /usr/sbin/nginx (64780) docker-default
-   /usr/sbin/nginx (64781) docker-default
-   /usr/sbin/nginx (64782) docker-default
-   /usr/sbin/nginx (64783) docker-default
-   /usr/sbin/nginx (64784) docker-default
-   /usr/sbin/nginx (64785) docker-default
+   /usr/sbin/chronyd (1404) 
+   /usr/sbin/chronyd (1405) 
+   /usr/sbin/nginx (2744) docker-default
+   /usr/sbin/nginx (2882) docker-default
+   /usr/sbin/nginx (2884) docker-default
+   /usr/sbin/nginx (2885) docker-default
+   /usr/sbin/nginx (2886) docker-default
+   /usr/sbin/nginx (2887) docker-default
+   /usr/sbin/nginx (2888) docker-default
+   /usr/sbin/nginx (2889) docker-default
+   /usr/sbin/nginx (2890) docker-default
+   /usr/sbin/nginx (2891) docker-default
+   /usr/sbin/nginx (2892) docker-default
+   /usr/sbin/nginx (2893) docker-default
+   /usr/sbin/nginx (2894) docker-default
+   /usr/sbin/nginx (2896) docker-default
+   /usr/sbin/nginx (2897) docker-default
+   /usr/sbin/nginx (2898) docker-default
+   /usr/sbin/nginx (2900) docker-default
+   /usr/sbin/nginx (2901) docker-default
+   /usr/sbin/nginx (2903) docker-default
+   /usr/sbin/nginx (2904) docker-default
+   /usr/sbin/nginx (2905) docker-default
+   /usr/sbin/nginx (2906) docker-default
+   /usr/sbin/nginx (2907) docker-default
+   /usr/sbin/nginx (2908) docker-default
+   /usr/sbin/nginx (2909) docker-default
+   /usr/sbin/nginx (2910) docker-default
+   /usr/sbin/nginx (2912) docker-default
+   /usr/sbin/nginx (2913) docker-default
+   /usr/sbin/nginx (2914) docker-default
+   /usr/sbin/nginx (2915) docker-default
+   /usr/sbin/nginx (2916) docker-default
 0 processes are in complain mode.
 0 processes are unconfined but have a profile defined.
 0 processes are in mixed mode.

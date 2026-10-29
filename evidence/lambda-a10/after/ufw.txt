@@ -5,7 +5,6 @@ New profiles: skip
 
 To                         Action      From
 --                         ------      ----
-Anywhere                   REJECT IN   157.245.84.42             
 22/tcp                     ALLOW IN    Anywhere                   # SSH (key + authenticator code)
 22/tcp (v6)                ALLOW IN    Anywhere (v6)              # SSH (key + authenticator code)
 

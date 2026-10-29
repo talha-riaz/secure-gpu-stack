@@ -205,8 +205,8 @@ second run that rewrote 0 files; a real reboot that kept every setting.
 1. Audit of the stock image.
 2. Install, then the recordings above.
 3. Maintenance window: held updates installed, real reboot, previous kernel removed.
-4. Final audit.
-5. A full re-run.
+4. The final code re-applied (a second run that rewrote 0 files), then a second real reboot.
+5. Final audit, with the GPU smoke test and the GPU inside a container.
 
 All shell code passes `shellcheck`.
 

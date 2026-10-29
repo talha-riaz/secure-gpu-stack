@@ -26,8 +26,8 @@
   Hostname:                  132-145-167-169
   ---------------------------------------------------
   Profiles:                  /etc/lynis/default.prf
-  Log file:                  /home/ubuntu/secure-gpu-stack/audit/results/final/lynis.log
-  Report file:               /home/ubuntu/secure-gpu-stack/audit/results/final/lynis-report.dat
+  Log file:                  /home/ubuntu/secure-gpu-stack/audit/results/final-ccdfae7/lynis.log
+  Report file:               /home/ubuntu/secure-gpu-stack/audit/results/final-ccdfae7/lynis-report.dat
   Report version:            1.0
   Plugin directory:          /etc/lynis/plugins
   ---------------------------------------------------
@@ -90,7 +90,7 @@
 [2C- Check running services (systemctl)[23C [ DONE ]
 [8CResult: found 30 running services[20C
 [2C- Check enabled services at boot (systemctl)[15C [ DONE ]
-[8CResult: found 60 enabled services[20C
+[8CResult: found 61 enabled services[20C
 [2C- Check startup files (permissions)[24C [ OK ]
 [2C- Running 'systemd-analyze security'[23C
 [8C- auditd.service:[36C [ EXPOSED ]
@@ -154,7 +154,7 @@
 [2C- Checking kernel version and release[22C [ DONE ]
 [2C- Checking kernel type[37C [ DONE ]
 [2C- Checking loaded kernel modules[27C [ DONE ]
-[6CFound 129 active modules[31C
+[6CFound 128 active modules[31C
 [2C- Checking Linux kernel configuration file[17C [ FOUND ]
 [2C- Checking default I/O kernel scheduler[20C [ NOT FOUND ]
 [2C- Checking for available kernel update[21C [ OK ]
@@ -425,7 +425,7 @@
 ------------------------------------
 [2C- Checking for expired SSL certificates [0/122][12C [ NONE ]
 
-  [WARNING]: Test CRYP-7902 had a long execution: 11.299938 seconds
+  [WARNING]: Test CRYP-7902 had a long execution: 10.729409 seconds
 
 [2C- Found 0 encrypted and 0 unencrypted swap devices in use.[1C [ OK ]
 [2C- Kernel entropy is sufficient[29C [ YES ]
@@ -704,7 +704,7 @@
   Follow-up:
   ----------------------------
   - Show details of a test (lynis show details TEST-ID)
-  - Check the logfile for all details (less /home/ubuntu/secure-gpu-stack/audit/results/final/lynis.log)
+  - Check the logfile for all details (less /home/ubuntu/secure-gpu-stack/audit/results/final-ccdfae7/lynis.log)
   - Read security controls texts (https://cisofy.com)
   - Use --upload to upload data to central system (Lynis Enterprise users)
 
@@ -729,8 +729,8 @@
   - Vulnerability scan     [V]
 
   Files:
-  - Test and debug information      : /home/ubuntu/secure-gpu-stack/audit/results/final/lynis.log
-  - Report data                     : /home/ubuntu/secure-gpu-stack/audit/results/final/lynis-report.dat
+  - Test and debug information      : /home/ubuntu/secure-gpu-stack/audit/results/final-ccdfae7/lynis.log
+  - Report data                     : /home/ubuntu/secure-gpu-stack/audit/results/final-ccdfae7/lynis-report.dat
 
 ================================================================================
 
