@@ -17,3 +17,7 @@ __pycache__/
 # Throwaway keys for local test VMs
 tests/lima/.keys/
 VERSION
+
+# Editor settings
+.idea/
+.vscode/
