@@ -11,3 +11,6 @@ totp/
 
 .DS_Store
 __pycache__/
+
+# Throwaway keys for local test VMs
+tests/lima/.keys/
