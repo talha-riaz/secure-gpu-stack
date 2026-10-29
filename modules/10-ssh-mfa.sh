@@ -135,6 +135,15 @@ apply_sshd_and_pam() {
     return 0
   fi
 
+  # A re-run with nothing to change: no reload, no lockout warning.
+  if cmp -s "$snap/pam" "$PAM_SSHD" && cmp -s "$snap/dropin" "$SSHD_DROPIN" \
+     && { [[ ! -f $MODULI ]] || cmp -s "$snap/moduli" "$MODULI"; }; then
+    rm -rf "$snap"
+    verify_effective_config
+    ok "SSH already requires key + authenticator code (no changes)"
+    return 0
+  fi
+
   if ! sshd -t 2>"$snap/err"; then
     warn "sshd rejected the new config, rolling back:"
     cat "$snap/err" >&2

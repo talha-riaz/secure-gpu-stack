@@ -84,6 +84,10 @@ close_ide_tunnels() {
   ok "tunnel credentials in /etc/cloudflared readable by root only"
   [[ $SGS_BROWSER_IDE == keep ]] && return 0
   for unit in $(systemctl list-unit-files --no-legend 'cloudflared*.service' | awk '{ print $1 }'); do
+    if [[ $(systemctl is-enabled "$unit" 2>/dev/null || true) == masked ]] && ! systemctl is-active -q "$unit"; then
+      ok "$unit already masked (outbound tunnel to the browser IDE)"
+      continue
+    fi
     log "$unit publishes: $(awk '$1 ~ /hostname:|service:/ { print $NF }' /etc/cloudflared/config.yml 2>/dev/null | paste -sd ' ' -)"
     run systemctl disable --now "$unit"
     mask_unit "$unit"
