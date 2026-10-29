@@ -1,0 +1,13 @@
+# Audit output: scan results from real hosts (may include hostnames, IPs, package lists)
+audit/results/
+*.log
+
+# Never commit keys or TOTP material
+*.pem
+*_key
+*_key.pub
+.google_authenticator
+totp/
+
+.DS_Store
+__pycache__/
