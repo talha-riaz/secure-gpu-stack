@@ -106,15 +106,18 @@ apply_held_updates() {
 }
 
 report_pending() {
-  local pending held other
+  local pending held total other
   pending=$(apt-get -s -o Debug::NoLocking=1 dist-upgrade 2>/dev/null | awk '/^Inst / && /-security/ { print $2 }')
   held=$(printf '%s\n' "$pending" | python3 -c '
 import re, sys
 patterns = sys.argv[1:]
 print(sum(1 for pkg in sys.stdin.read().split() if any(re.match(p, pkg) for p in patterns)))' "${HOLD_PATTERNS[@]}")
-  other=$(( $(printf '%s\n' "$pending" | grep -c .) - held ))
+  total=$(printf '%s\n' "$pending" | grep -c . || true)   # grep exits 1 when nothing is pending
+  other=$((total - held))
   if ((other)); then
     warn "$other security update(s) still pending outside the held set; check: sudo unattended-upgrade -v --dry-run"
+  elif ((total == 0)); then
+    ok "all security updates applied, including the kernel and GPU stack"
   else
     ok "all security updates applied except $held held for the kernel/GPU maintenance window"
   fi
