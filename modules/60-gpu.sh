@@ -2,9 +2,10 @@
 #
 # - Browser IDE: Lambda's console can open JupyterLab in the browser ("Cloud IDE"), and a
 #   Jupyter terminal is a shell that never asks for the SSH key or the authenticator code.
-#   Any Jupyter/code-server service is stopped, disabled and masked (SGS_BROWSER_IDE=keep
-#   to leave it). Jupyter stays usable the safe way: bind it to 127.0.0.1 and reach it
-#   with `ssh -L 8888:localhost:8888`, which goes through key + code.
+#   Any Jupyter/code-server service is stopped, disabled and masked, along with the
+#   outbound cloudflared tunnel that publishes it (SGS_BROWSER_IDE=keep to leave both).
+#   Jupyter stays usable the safe way: bind it to 127.0.0.1 and reach it with
+#   `ssh -L 8888:localhost:8888`, which goes through key + code.
 # - GPU profiling: performance counters only for admins (NVreg_RestrictProfilingToAdminUsers),
 #   since unprivileged profiling enables side-channel attacks (CVE-2018-6260). Current
 #   drivers default to this; the setting makes it explicit so it can't silently regress.
@@ -63,11 +64,31 @@ close_browser_ide() {
       ok "stopped and masked $unit (browser terminal that bypassed SSH MFA)"
     done
   fi
+  close_ide_tunnels
   # Anything still running outside a service unit can't be managed safely; report it.
   for pid in $(pgrep -f -i 'jupyter|code-server' || true); do
     warn "IDE process outside systemd still running: pid $pid $(ps -o args= -p "$pid" | cut -c1-80)"
   done
   return 0
+}
+
+# Lambda publishes the Cloud IDE through an outbound cloudflared tunnel
+# (*.lambdaspaces.com -> localhost:7000). It connects out, so no inbound firewall ever
+# sees it; with the IDE off, all it could still do is publish whatever later listens on
+# that port. Its credentials file ships world-readable, letting any local process run
+# its own connector for the tunnel.
+close_ide_tunnels() {
+  local unit
+  [[ -d /etc/cloudflared ]] || return 0
+  run find /etc/cloudflared -maxdepth 1 -name '*.json' -exec chmod 0600 {} +
+  ok "tunnel credentials in /etc/cloudflared readable by root only"
+  [[ $SGS_BROWSER_IDE == keep ]] && return 0
+  for unit in $(systemctl list-unit-files --no-legend 'cloudflared*.service' | awk '{ print $1 }'); do
+    log "$unit publishes: $(awk '$1 ~ /hostname:|service:/ { print $NF }' /etc/cloudflared/config.yml 2>/dev/null | paste -sd ' ' -)"
+    run systemctl disable --now "$unit"
+    mask_unit "$unit"
+    ok "stopped and masked $unit (outbound tunnel to the browser IDE, invisible to inbound firewalls)"
+  done
 }
 
 restrict_gpu_profiling() {

@@ -15,10 +15,10 @@ UU_CONF=/etc/apt/apt.conf.d/52secure-gpu-stack-updates
 
 # Python regexes matched from the start of package names (unattended-upgrades semantics).
 HOLD_PATTERNS=(
-  'linux-image-' 'linux-headers-' 'linux-modules-' 'linux-objects-nvidia-'
-  'linux-signatures-nvidia-' 'linux-generic' 'linux-virtual' 'linux-aws' 'linux-gcp'
-  'nvidia-' 'libnvidia-' 'cuda' 'libcuda' 'libcudnn' 'libnccl'
-  'libcu(blas|fft|rand|solver|sparse|pti|tensor|file)' 'libnv(rtc|jitlink|toolsext|infer|jpeg)'
+  'linux-image-' 'linux-headers-' 'linux-modules-' 'linux-tools-' 'linux-objects-nvidia-'
+  'linux-signatures-nvidia-' 'linux-nvidia' 'linux-generic' 'linux-virtual' 'linux-aws' 'linux-gcp'
+  'nvidia-' 'libnvidia-' 'cuda' 'libcuda' 'libcudnn' 'libnccl' 'libcuinj'
+  'libcu(blas|fft|rand|solver|sparse|pti|tensor|file)' 'libnv(rtc|jitlink|toolsext|infer|jpeg|blas|vm|sdm)'
 )
 
 module_main() {

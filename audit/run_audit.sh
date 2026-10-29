@@ -212,7 +212,7 @@ collect_gpu() {
   # Browser IDEs (e.g. Lambda's Cloud IDE JupyterLab) are a way in that skips SSH.
   # Tokens in their command lines are redacted before saving.
   cap ide_processes.txt bash -c \
-    'ps -eo user,pid,args --no-headers | grep -iE "[j]upyter|[n]otebook|[c]ode-server|[l]ambda" | sed -E "s/(token|password)=[^ ]*/\1=REDACTED/Ig"; systemctl list-unit-files --no-legend --no-pager | grep -iE "[j]upyter|[l]ambda|[c]ode-server"'
+    'ps -eo user,pid,args --no-headers | grep -iE "[j]upyter|[n]otebook|[c]ode-server|[l]ambda|[c]loudflared" | sed -E "s/(token|password)=[^ ]*/\1=REDACTED/Ig"; systemctl list-unit-files --no-legend --no-pager | grep -iE "[j]upyter|[l]ambda|[c]ode-server|[c]loudflared"'
 }
 
 collect_supply_chain() {
@@ -221,6 +221,11 @@ collect_supply_chain() {
   cap ml_defaults.txt bash -c 'grep -rhs "TORCH_FORCE_WEIGHTS_ONLY_LOAD\|HF_HUB_DISABLE_TELEMETRY" /etc/profile.d/ /etc/environment || echo none'
   cap model_scanner.txt bash -c 'command -v sgs-scan-model || echo none'
   CAP_TIMEOUT=120 cap torch_version.txt python3 -c 'import torch; print(torch.__version__)'
+}
+
+collect_tunnels() {
+  # Outbound tunnels (e.g. Lambda's Cloud IDE via cloudflared) bypass inbound firewalls.
+  cap tunnel_creds.txt bash -c "stat -c '%a %U:%G %n' /etc/cloudflared/* 2>/dev/null || echo none"
 }
 
 collect_lynis() {
@@ -306,6 +311,7 @@ collect_packages
 collect_kernel_and_logging
 collect_gpu
 collect_supply_chain
+collect_tunnels
 ((RUN_LYNIS)) && collect_lynis
 ((RUN_TRIVY)) && collect_trivy
 ((RUN_TRIVY && RUN_SBOM)) && collect_sbom

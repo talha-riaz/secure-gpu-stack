@@ -22,6 +22,7 @@ import sys
 DEFAULT_PORTS = {
     22: "SSH",
     80: "HTTP",
+    111: "rpcbind (NFS portmapper)",
     443: "HTTPS",
     3000: "Grafana / dev servers",
     5000: "MLflow / Flask",

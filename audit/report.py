@@ -518,8 +518,10 @@ def gpu_browser_ide(h):
         return Result(NA, "no data")
     procs = [l for l in h.lines("ide_processes.txt") if re.match(r"^\S+\s+\d+\s", l)]
     ide = [l for l in procs if re.search(r"jupyter|notebook|code-server", l, re.I)]
+    tunnels = [l for l in procs if re.search(r"cloudflared", l, re.I)]
     if not ide:
-        return Result(PASS, "none running")
+        return Result(PASS, "none running") if not tunnels else \
+            Result(WARN, "IDE off, tunnel still running", "cloudflared would publish whatever listens on its target port")
     pids = {l.split()[1] for l in ide}
     listening = {pid for _, _, pid in listeners(h)}
     public = ["%s (%s)" % (p, proc) for p, proc, pid in listeners(h) if pid in pids]
@@ -527,7 +529,24 @@ def gpu_browser_ide(h):
     summary = "; ".join(" ".join(l.split()[2:6]) for l in ide[:2])
     if public:
         return Result(FAIL, "listening on " + ", ".join(public), summary)
+    if tunnels:
+        return Result(FAIL, "published via outbound tunnel (cloudflared)",
+                      "inbound firewalls can't see an outbound tunnel; " + summary)
     return Result(WARN, "%d IDE process(es) running" % len(ide), summary + "; check how it is reached")
+
+
+@check("GPU & ML tooling", "Tunnel credentials readable by root only",
+       "Readable tunnel credentials let any local process run its own connector and intercept the tunnel.",
+       ["tunnel_creds.txt"])
+def tunnel_creds(h):
+    lines = [l for l in h.lines("tunnel_creds.txt") if l.strip() and l.strip() != "none"]
+    if not h.text("tunnel_creds.txt"):
+        return Result(NA, "no data")
+    creds = [l.split() for l in lines if l.endswith(".json") and len(l.split()) == 3]
+    if not creds:
+        return Result(NA, "no tunnel credentials")
+    exposed = ["%s (%s)" % (p, m) for m, _, p in creds if int(m, 8) & 0o077]
+    return Result(FAIL, "world/group readable", ", ".join(exposed)) if exposed else Result(PASS, "0600")
 
 
 TOOLKIT_MIN = (1, 17, 8)
