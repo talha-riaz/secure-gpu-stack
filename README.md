@@ -1,0 +1,228 @@
+# Secure GPU Stack
+
+A security layer for GPU instances running [Lambda Stack](https://lambda.ai/lambda-stack-deep-learning-software).
+Lambda Stack gets researchers a working driver, CUDA and PyTorch. This adds what it leaves out:
+
+- every SSH login needs the key **and** a code from Google Authenticator or Microsoft Authenticator;
+- the side doors around SSH are closed;
+- the box is patched and locked down, without breaking the GPU or a running training job.
+
+It is one re-runnable installer (`sudo ./install.sh`) with seven modules, plus an audit tool that measures any
+instance before and after. Both were run on a real Lambda A10 instance, and every number below comes from that
+run.
+
+[![Before/after summary: 8/33 checks passed on the stock image, 30/33 after](evidence/media/report-summary.png)](evidence/report.md)
+
+| On a real `gpu_1x_a10`, Lambda Stack 22.04 | Stock image | With Secure GPU Stack |
+|---|---|---|
+| Checks passed ([full report](evidence/report.md)) | 8 / 33 | **30 / 33** |
+| A stolen SSH key is enough to log in | yes | **no**: key + authenticator code |
+| Root shell without SSH, through the browser IDE | yes | **no** |
+| Ports reachable from the internet (with services listening on 8000 and 8080) | 22, 111, 8000, 8080 | **22** |
+| `docker run -p` bypasses the host firewall | yes | **no** |
+| Pending security updates | 202 | **0** |
+| Fixable critical/high CVEs: OS / kernel / Docker and other binaries | 10 / 404 / 63 | **0 / 0 / 5** |
+| Fixable critical/high CVEs in Python packages (reported, not auto-upgraded; [why](docs/FINDINGS.md#still-open)) | 44 | 45 |
+| A malicious checkpoint runs code when loaded | yes | **no** |
+| ssh-audit | 6 fail, 16 warn | 0 fail, 5 warn |
+| GPU: CUDA, PyTorch, GPU in containers | works | **works** (smoke test 3/3) |
+
+**Reviewing this quickly:**
+1. Start with the [requirement-to-evidence map](evidence/README.md#requirement--evidence): every claim has a raw
+   file or a recording next to it.
+2. Then read [FINDINGS.md](docs/FINDINGS.md): what the stock image exposes, and the bugs that only showed up on
+   real hardware.
+3. The core of the challenge is [`modules/10-ssh-mfa.sh`](modules/10-ssh-mfa.sh) and
+   [`bin/sgs-enroll`](bin/sgs-enroll).
+
+## The challenge, point by point
+
+| Ask | What was built | Proof |
+|---|---|---|
+| "for each ssh to require a microsoft or google authenticator app approval to get in" | Every new SSH connection needs the key, then a 6-digit code (TOTP, the standard both apps implement). Without both, nobody gets in. There are no passwords and no root login, and accounts that haven't set up a code are refused. | [key alone, before](evidence/media/ssh-before-key-alone-logs-in.gif) · [key + code](evidence/media/ssh-after-key-and-code.gif) · [key alone, refused](evidence/media/ssh-after-key-alone-denied.gif) · [wrong code, refused](evidence/media/ssh-after-wrong-code-denied.gif) · [`sshd_T.txt`](evidence/lambda-a10/patched/sshd_T.txt) · [`ssh_server_log.txt`](evidence/lambda-a10/hardened/ssh_server_log.txt) |
+| "improve the starting stack that loads with the gpu in ways it can be more secure" | Seven modules on top of Lambda Stack: [SSH](modules/10-ssh-mfa.sh), [firewall](modules/20-firewall.sh), [kernel](modules/30-kernel.sh), [audit trail](modules/40-audit-logging.sh), [updates](modules/50-updates.sh), [GPU and IDE](modules/60-gpu.sh), [ML supply chain](modules/70-supply-chain.sh) | [report](evidence/report.md): 8 → 30 of 33 checks; [GPU smoke test](evidence/lambda-a10/patched/gpu_smoke.txt) 3/3 |
+| "compare the images" | The stock Lambda Stack image and the hardened one, audited by the same tool on the same instance: stock, hardened, and after a kernel update and reboot | [`evidence/lambda-a10/`](evidence/lambda-a10/) ([before](evidence/lambda-a10/before/) · [hardened](evidence/lambda-a10/hardened/) · [patched](evidence/lambda-a10/patched/)) |
+| "the cheapest gpu" | `gpu_1x_a10` | [instance](evidence/media/lambda-instance-running.png) |
+
+**"Approval" is a code, not a push notification.** Both apps can approve a login in two ways:
+- **A 6-digit code (TOTP).** It's an open standard and works offline: the server checks the code itself.
+- **A push notification you tap.** That requires a cloud identity service (Microsoft Entra ID, Duo, Okta) to send
+  the push, an account with it, and its availability at every login.
+
+For a standalone GPU instance, the code keeps the second factor on the box with no third party in the login
+path. For a team that already runs one of those services, push means swapping the PAM module (for example Duo's
+`pam_duo`); the sshd side stays the same.
+
+## What it looks like
+
+| Stock image: the key alone is enough | After: the key, then the code |
+|---|---|
+| ![SSH login with a key only](evidence/media/ssh-before-key-alone-logs-in.gif) | ![SSH login asking for a verification code](evidence/media/ssh-after-key-and-code.gif) |
+
+| After: key alone is refused | After: wrong codes are refused, then banned |
+|---|---|
+| ![Permission denied (keyboard-interactive)](evidence/media/ssh-after-key-alone-denied.gif) | ![Too many authentication failures](evidence/media/ssh-after-wrong-code-denied.gif) |
+
+**Enrolling** shows a QR code in the terminal. The secret only takes effect once the app produces a valid code,
+so a bad scan can't lock anyone out ([redacted screenshot](evidence/media/enrollment-redacted.png)).
+
+**The side door this closes.** On the stock image, the console's "Launch" button opens JupyterLab in the browser,
+through a tunnel that no firewall can see. Its terminal is root, with no SSH key and no code
+([recording](evidence/media/cloud-ide-before-root-shell.gif)). After install it's off, and Jupyter is reached
+through SSH instead ([recording](evidence/media/jupyter-via-ssh-tunnel-after.gif)).
+
+## What each module does
+
+| Module | Changes |
+|---|---|
+| [`10-ssh-mfa`](modules/10-ssh-mfa.sh) | `AuthenticationMethods publickey,keyboard-interactive` with `pam_google_authenticator`. **Secrets:** stored root-only, outside users' homes; no `nullok`; single-use codes; 3 tries per 30 s; emergency codes. **SSH settings:** no passwords, no root; `MaxAuthTries 3`, `MaxSessions 1`, `PerSourceMaxStartups 3`; no X11 or agent forwarding; `LogLevel VERBOSE`; ssh-audit's crypto profile with post-quantum key exchange first; DH moduli of 3072 bits or more. **Safety:** checked with `sshd -t` and rolled back on error; the installer flags accounts that would skip the code or can't log in. |
+| [`20-firewall`](modules/20-firewall.sh) | **ufw** denies inbound except SSH. **Docker's bypass is closed:** `DOCKER-USER` drops new outside connections to containers, and Docker publishes on `127.0.0.1` by default; it is never restarted under running containers. **fail2ban** bans brute force, including wrong codes, and escalates repeat offenders. |
+| [`30-kernel`](modules/30-kernel.sh) | 30 sysctl settings (the audit checks 21 of them): kernel pointers, eBPF, kexec, link and FIFO protections, setuid core dumps, redirects, spoofed packets. Applied in boot order and checked, so they survive a reboot. IP forwarding (Docker needs it) and `ptrace_scope 1` (py-spy needs it) are left alone. |
+| [`40-audit-logging`](modules/40-audit-logging.sh) | auditd records changes to SSH, PAM, sudoers, accounts, firewall, Docker, apt and cron, any read of the MFA secrets, `~/.ssh` changes, and every root command with the person who logged in. Rules are reloaded after boot so none are lost. |
+| [`50-updates`](modules/50-updates.sh) | Security updates now and daily: Ubuntu, Docker, the NVIDIA Container Toolkit and cloudflared. **Kernel, driver and CUDA are held** for a planned window, since a driver swap under a running job breaks it. **It never reboots or restarts services on its own;** it reports what needs one. The toolkit is pinned so Lambda's older build can't replace it. |
+| [`60-gpu`](modules/60-gpu.sh) | Stops and masks the browser IDE and its outbound tunnel, and makes the tunnel credentials root-only. Pins GPU performance counters to admins. Makes sure the NVIDIA Container Toolkit is past its container-escape fixes (≥ 1.17.8). |
+| [`70-supply-chain`](modules/70-supply-chain.sh) | `torch.load` accepts only tensors and plain data in every login shell (`TORCH_FORCE_WEIGHTS_ONLY_LOAD=1`). Adds `sgs-scan-model` (picklescan, pinned and checksum-verified) to check checkpoints before loading. Flags apt sources that skip signature checks. |
+
+What it deliberately does **not** do:
+- auto-reboot;
+- auto-upgrade the driver, CUDA or ML libraries;
+- remove Lambda's repositories;
+- change GPU device permissions (containers need them).
+
+[Design decisions](#design-decisions) explains each.
+
+## Install
+
+On a fresh Lambda instance (Ubuntu 22.04 with Lambda Stack), as the `ubuntu` user:
+
+```bash
+git clone <this repository> secure-gpu-stack && cd secure-gpu-stack
+sudo ./install.sh --dry-run    # optional: show every change, apply nothing
+sudo ./install.sh              # scan the QR code with Google or Microsoft Authenticator, type one code
+```
+
+Keep that session open. In a new terminal, `ssh ubuntu@<ip>` should now ask for `Verification code:`. A full
+install takes a few minutes, most of it applying the security updates. Running it again changes nothing
+([proof](evidence/lambda-a10/patched/install_rerun.log)). `./install.sh --list`, `--only` and `--skip` select
+modules.
+
+| Setting | Effect |
+|---|---|
+| `SGS_ALLOW_PORTS="443/tcp"` | Open more inbound ports |
+| `SGS_FAIL2BAN_IGNOREIP="203.0.113.5"` | Never ban these addresses |
+| `SGS_BROWSER_IDE=keep` | Leave Lambda's browser IDE running (its terminal bypasses SSH MFA) |
+| `SGS_SSH_MAX_SESSIONS=4` | Allow more sessions per connection (default 1) |
+| `SGS_PATCH_ALL=1` | Also upgrade the held kernel, driver and CUDA (reboot afterwards) |
+| `SGS_AUDIT_IMMUTABLE=1` | Lock the audit rules until reboot |
+
+Pass them through sudo, for example `sudo SGS_ALLOW_PORTS=443/tcp ./install.sh`.
+
+## Day to day
+
+```bash
+sudo sgs-enroll alice                      # alice scans the QR shown here (in person or on a call); no code, no login
+sudo sgs-enroll alice --force              # lost phone: new secret (or use an emergency code)
+ssh -L 8888:localhost:8888 ubuntu@<ip>     # Jupyter/TensorBoard: bind to 127.0.0.1, tunnel over SSH
+sgs-scan-model ./downloaded-model.bin      # check a checkpoint before loading it
+```
+
+**Maintenance window** for the held kernel, driver and CUDA updates. This is what produced the
+[`patched`](evidence/lambda-a10/patched/) evidence:
+
+```bash
+sudo SGS_PATCH_ALL=1 ./install.sh --only updates && sudo reboot
+nvidia-smi && bash -lc 'python3 tests/gpu_smoke.py'    # GPU back? then remove the previous kernel
+```
+
+## Measure it yourself
+
+```bash
+sudo ./audit/run_audit.sh before                              # on the stock instance (add --sbom for a CycloneDX SBOM)
+python3 audit/external_scan.py <ip> --out <results>/external.json   # from your laptop: what the internet sees
+sudo ./install.sh
+sudo ./audit/run_audit.sh after
+python3 audit/report.py <before-results> <after-results> -o report  # writes report.md and report.html
+```
+
+**What the audit does:**
+- It only collects; it changes no security setting.
+- It installs pinned, checksum-verified scanners (Trivy, ssh-audit) plus Lynis.
+- [`report.py`](audit/report.py) judges 37 checks (33 scored, 4 informational) from the raw files, and names the
+  files each check read.
+- [`audit/demo_services.sh`](audit/demo_services.sh) starts two deliberately exposed stand-in services, so a
+  firewall test has something to block.
+
+To reproduce the report in this repository from the raw evidence:
+`python3 audit/report.py evidence/lambda-a10/before evidence/lambda-a10/patched`.
+
+**No GPU needed** to try it: [`tests/lima/create_vm.sh`](tests/lima/create_vm.sh) builds a local Ubuntu 22.04 VM
+(macOS or Linux, via Lima), and [`tests/lima/iterate.sh`](tests/lima/iterate.sh) runs install → audit → report
+against it.
+
+## Design decisions
+
+- **A layer, not a fork of the image.** Lambda Stack's value is its curated driver, CUDA and PyTorch set. This
+  changes configuration around it and leaves those packages alone, so it applies to any instance Lambda launches,
+  today's image or next month's.
+- **Code-based MFA, enforced by sshd itself.** It needs no external service at login. Secrets sit in a root-only
+  directory, not `~/.google_authenticator`, so a process running as the user can't copy them and clone the second
+  factor. No `nullok`, so forgetting to enroll fails closed.
+- **Holds, not auto-reboots.** Unattended kernel or driver upgrades are the classic way to kill a week-long
+  training run. Everything else patches daily; the kernel, driver and CUDA move together in a window the team
+  picks. The report counts what is waiting, so the hold is visible, not silent.
+- **Close the browser IDE by default.** It is a root terminal that SSH MFA can't cover, published through a tunnel
+  no firewall sees. Jupyter itself is kept, behind `ssh -L`. Teams that accept the Lambda console login as their
+  gate can opt back in.
+- **Firewall Docker too.** "ufw deny" with a public `docker run -p` is the most common false sense of security on
+  GPU boxes. Both layers are covered: the `DOCKER-USER` chain and the localhost publish default.
+- **Never weaken research workflows quietly.** IP forwarding stays on (Docker), `ptrace_scope` stays 1 (py-spy,
+  gdb), GPU devices stay world-usable (containers), and Python packages are reported, not upgraded under
+  experiments.
+- **Measure, don't assert.** The audit is separate from the installer, collects raw output only, and the report
+  says which file every verdict came from, so any reviewer can check a number without trusting the tool.
+
+## Limitations
+
+The full list is in [THREAT_MODEL.md](docs/THREAT_MODEL.md) and [FINDINGS.md](docs/FINDINGS.md#still-open).
+
+- **Applied after boot, not baked into an image.** Until `install.sh` runs, the stock exposure applies, narrowed
+  by Lambda's default cloud rule (SSH only). A custom image or launch-time automation would close that window.
+- **Audit logs stay on the host**, so root can erase them. Shipping them off the box is the real fix.
+- **The weights-only default reaches login shells only** (every interactive SSH session). Commands run as
+  `ssh host 'cmd'`, systemd units and containers don't get it.
+- **An authenticated connection kept open by the user's own client** can open new sessions one after another
+  without a new code; `MaxSessions 1` only stops them running in parallel.
+- **Tested on Ubuntu 22.04**, on Lambda (x86_64, A10) and in local VMs (arm64). Ubuntu 24.04 is untested.
+- **3 checks still don't pass:** classical SSH key exchanges kept for older clients, 5 CVEs waiting on vendor
+  rebuilds, and Python CVEs inside Lambda's (now disabled) IDE environment and Microsoft's Azure CLI.
+
+## How it was tested
+
+**On local VMs** (Lima, Ubuntu 22.04): many install → audit → fix rounds; a fresh install of the final code; a
+second run that rewrote 0 files; a real reboot that kept every setting.
+
+**On a real Lambda `gpu_1x_a10`** ([evidence](evidence/README.md)):
+1. Audit of the stock image.
+2. Install.
+3. Audit again, with the recordings above.
+4. Maintenance window: held updates installed, real reboot, previous kernel removed.
+5. Final audit.
+6. A full re-run.
+
+The real hardware found bugs the VMs couldn't, all fixed and listed in
+[FINDINGS.md](docs/FINDINGS.md#bugs-found-by-running-on-real-hardware): Lambda's repository priority downgrading
+the container toolkit, an Ubuntu file undoing a kernel setting at boot, and audit rules lost at boot. All shell
+code passes `shellcheck`.
+
+## Repository layout
+
+```
+install.sh                 entry point: runs modules/ in order, --dry-run, --only/--skip, --list
+lib/common.sh              shared helpers: idempotent writes with backups, dry-run diffs, logging
+modules/                   the seven hardening modules
+bin/sgs-enroll             MFA enrollment (QR in the terminal, confirmed by a code before it takes effect)
+audit/                     run_audit.sh (collect), external_scan.py (outside view), report.py (judge), demo_services.sh
+tests/                     gpu_smoke.py (CUDA + malicious checkpoint), Lima VM harness
+evidence/                  raw evidence, report and recordings from the Lambda A10 run
+docs/                      FINDINGS.md, THREAT_MODEL.md
+```
