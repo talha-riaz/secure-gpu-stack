@@ -9,7 +9,10 @@
 #   - kernel.yama.ptrace_scope stays 1 (Ubuntu default): users can still attach py-spy or gdb
 #     to their own stuck training jobs. 2 (admin only) is stricter but breaks that workflow.
 
-SYSCTL_FILE=/etc/sysctl.d/60-secure-gpu-stack.conf
+# Boot applies sysctl files in filename order and the last value wins. Ubuntu's own
+# 99-protect-links.conf resets fs.protected_fifos, so ours has to sort after it.
+SYSCTL_FILE=/etc/sysctl.d/99-secure-gpu-stack.conf
+OLD_SYSCTL_FILE=/etc/sysctl.d/60-secure-gpu-stack.conf
 
 module_main() {
   write_file "$SYSCTL_FILE" 0644 <<'EOF'
@@ -52,12 +55,33 @@ net.ipv4.tcp_syncookies = 1
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 net.ipv4.icmp_ignore_bogus_error_responses = 1
 EOF
-  run sysctl -q -e -p "$SYSCTL_FILE"   # -e: skip keys this kernel lacks (e.g. IPv6 disabled)
-  is_dry || ok "kernel hardening settings applied (persist across reboots via $SYSCTL_FILE)"
+  if [[ -f $OLD_SYSCTL_FILE ]]; then
+    backup_file "$OLD_SYSCTL_FILE"
+    run rm -f "$OLD_SYSCTL_FILE"
+  fi
+  # Apply every sysctl file the way boot does, so the values verified now are the ones
+  # the next boot produces. -e: skip keys this kernel lacks (e.g. IPv6 disabled).
+  run sysctl -q -e --system
+  is_dry || verify_sysctl
 
   if is_dry || aa-status --enabled 2>/dev/null; then
     ok "AppArmor enabled"
   else
     warn "AppArmor is not enabled; it needs a kernel boot parameter and a reboot (apparmor=1 security=apparmor)"
+  fi
+}
+
+verify_sysctl() {
+  local key want have bad=()
+  while IFS='=' read -r key want; do
+    key=${key// /} want=${want// /}
+    [[ -z $key || $key == \#* ]] && continue
+    have=$(sysctl -n "$key" 2>/dev/null) || continue   # not in this kernel
+    [[ $have == "$want" ]] || bad+=("$key=$have (want $want)")
+  done <"$SYSCTL_FILE"
+  if ((${#bad[@]})); then
+    warn "overridden by a sysctl file applied after $SYSCTL_FILE: ${bad[*]}"
+  else
+    ok "kernel hardening settings applied and checked in boot order (they survive a reboot)"
   fi
 }
