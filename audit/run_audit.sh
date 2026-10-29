@@ -130,7 +130,8 @@ collect_meta() {
     echo "arch=$(dpkg --print-architecture)"
     echo "gpu=${gpu:-none}"
     echo "sgs_installed=$([[ -f /etc/ssh/sshd_config.d/00-secure-gpu-stack.conf ]] && echo yes || echo no)"
-    echo "sgs_version=$(git -c safe.directory="$SGS_ROOT" -C "$SGS_ROOT" describe --always --dirty 2>/dev/null || echo unknown)"
+    echo "sgs_version=$(git -c safe.directory="$SGS_ROOT" -C "$SGS_ROOT" describe --always --dirty 2>/dev/null \
+      || cat "$SGS_ROOT/VERSION" 2>/dev/null || echo unknown)"
   } >"$OUT/meta.txt"
 }
 

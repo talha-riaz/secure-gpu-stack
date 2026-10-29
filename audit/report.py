@@ -469,7 +469,8 @@ def pkg_auto_updates(h):
        "An unattended upgrade must not swap the GPU driver under a running training job.",
        ["gpu_packages.txt", "apt_holds.txt", "apt_preferences.txt"])
 def pkg_gpu_pinned(h):
-    pkgs = [l.split("\t")[0] for l in h.lines("gpu_packages.txt") if "\t" in l]
+    # lambda-repository only carries the repository signing key: not part of the GPU stack.
+    pkgs = [l.split("\t")[0] for l in h.lines("gpu_packages.txt") if "\t" in l and not l.startswith("lambda-repository")]
     if not pkgs:
         return Result(NA, "no NVIDIA/CUDA packages")
     holds = set(h.lines("apt_holds.txt"))
@@ -532,6 +533,9 @@ def gpu_browser_ide(h):
     if tunnels:
         return Result(FAIL, "published via outbound tunnel (cloudflared)",
                       "inbound firewalls can't see an outbound tunnel; " + summary)
+    loopback = [l for l in h.lines("listening.txt") if any("pid=%s," % p in l for p in pids)]
+    if loopback and all(re.search(r"\s(127\.[\d.]+|\[::1\]):\d+\s", l) for l in loopback):
+        return Result(PASS, "localhost only, no tunnel", "reachable only through ssh -L (key + code): " + summary)
     return Result(WARN, "%d IDE process(es) running" % len(ide), summary + "; check how it is reached")
 
 
@@ -787,7 +791,14 @@ HEADLINE = [
 NOTES = [
     "Each check lists the raw files it read; they are in the results directories named above.",
     "The external scan reflects the cloud firewall and the host firewall together. A demo ruleset opened the scanned "
-    "ports to the scanning IP only, so the host firewall is what's being measured.",
+    "ports to the scanning IP only, so the host firewall is what's being measured; with the cloud provider's default "
+    "rules a stranger would see only SSH.",
+    "Both hosts ran audit/demo_services.sh first: a plain service on :8000 and a Docker container on :8080, stand-ins "
+    "for what researchers commonly start (jupyter --ip 0.0.0.0, docker run -p). Any other open port is the image's own.",
+    "Nothing was weakened before the 'before' audit: every setting measured there is the image default. The audit "
+    "installs its scanners (Lynis, ssh-audit, Trivy) and refreshes apt package lists; it changes no security setting.",
+    "Counts that depend on the day (pending updates, CVEs) drift as the image and vulnerability databases are updated; "
+    "the security posture itself reproduces.",
     "Vulnerability counts are unique CVE IDs rated critical or high by Trivy that already have a fixed version. "
     "Library CVEs are reported for triage: upgrading ML libraries can break research code, so the stack does not auto-upgrade them.",
     "Lynis is a broad heuristic; it is shown for context, not used as the measure of success.",

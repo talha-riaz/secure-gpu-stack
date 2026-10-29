@@ -17,7 +17,7 @@ UU_CONF=/etc/apt/apt.conf.d/52secure-gpu-stack-updates
 HOLD_PATTERNS=(
   'linux-image-' 'linux-headers-' 'linux-modules-' 'linux-tools-' 'linux-objects-nvidia-'
   'linux-signatures-nvidia-' 'linux-nvidia' 'linux-generic' 'linux-virtual' 'linux-aws' 'linux-gcp'
-  'nvidia-' 'libnvidia-' 'cuda' 'libcuda' 'libcudnn' 'libnccl' 'libcuinj'
+  'nvidia-' 'libnvidia-' 'cuda' 'libcuda' 'libcudnn' 'libnccl' 'libcuinj' 'lambda-stack'
   'libcu(blas|fft|rand|solver|sparse|pti|tensor|file)' 'libnv(rtc|jitlink|toolsext|infer|jpeg|blas|vm|sdm)'
 )
 
@@ -39,6 +39,9 @@ write_update_policy() {
     echo 'APT::Periodic::AutocleanInterval "7";'
     echo "// Never reboot by itself: that would kill running training jobs."
     echo 'Unattended-Upgrade::Automatic-Reboot "false";'
+    echo "// One dpkg transaction instead of one per package group: a fresh image can carry"
+    echo "// hundreds of pending updates, and per-step hooks made that take hours."
+    echo 'Unattended-Upgrade::MinimalSteps "false";'
     echo "// Kernel + NVIDIA driver + CUDA move together, in a planned window with a reboot."
     echo "Unattended-Upgrade::Package-Blacklist {"
     for p in "${HOLD_PATTERNS[@]}"; do
@@ -50,9 +53,10 @@ write_update_policy() {
 }
 
 apply_security_updates() {
-  log "installing pending security updates (kernel, NVIDIA and CUDA held back)"
-  # List services that need a restart instead of restarting them (Docker included).
-  if ! run env NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive unattended-upgrade; then
+  log "installing pending security updates (kernel, NVIDIA and CUDA held back; can take several minutes)"
+  # Skip needrestart's scan of every process during this run (it ran after each step and
+  # dominated the time); services needing a restart are listed by report_pending instead.
+  if ! run env NEEDRESTART_SUSPEND=1 DEBIAN_FRONTEND=noninteractive unattended-upgrade -v; then
     warn "unattended-upgrade failed (apt busy?); security updates were not applied. Re-run: sudo unattended-upgrade -v"
   fi
 }
@@ -78,5 +82,9 @@ report_pending() {
     ok "all security updates applied except $held held for the kernel/GPU maintenance window"
   fi
   [[ -f /var/run/reboot-required ]] && warn "a reboot is needed to activate some updates (not done automatically)"
+  if command -v needrestart >/dev/null 2>&1; then
+    log "services running old library versions (restart them when convenient):"
+    NEEDRESTART_MODE=l needrestart -b 2>/dev/null | awk -F': ' '/^NEEDRESTART-SVC/ { print "    " $2 }' >&2
+  fi
   return 0
 }

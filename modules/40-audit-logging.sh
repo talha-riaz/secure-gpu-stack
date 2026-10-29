@@ -21,7 +21,7 @@ module_main() {
   apt_install auditd
   audit_rules | write_file "$AUDIT_RULES" 0640
   run systemctl enable --now auditd
-  run augenrules --load
+  if is_dry; then run augenrules --load; else augenrules --load >/dev/null; fi   # it prints auditctl -s per file
   is_dry || ok "audit rules loaded: $(auditctl -l | grep -c '^-') (search: sudo ausearch -i -k <key>; add --input-logs in scripts)"
 }
 

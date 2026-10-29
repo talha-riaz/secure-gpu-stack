@@ -15,6 +15,7 @@
 # keeps established connections (this session) alive.
 
 UFW_AFTER_RULES=/etc/ufw/after.rules
+UFW_SYSCTL=/etc/ufw/sysctl.conf
 UFW_AFTER6_RULES=/etc/ufw/after6.rules
 DOCKER_DAEMON_JSON=/etc/docker/daemon.json
 FAIL2BAN_JAIL=/etc/fail2ban/jail.d/secure-gpu-stack.local
@@ -41,6 +42,7 @@ module_main() {
   apt_install ufw fail2ban python3-systemd
   configure_docker_publish_default
   configure_docker_user_chain
+  align_ufw_sysctl
   configure_ufw
   configure_fail2ban
   is_dry || verify_firewall
@@ -78,6 +80,13 @@ with_docker_user_block() {
 configure_docker_user_chain() {
   with_docker_user_block "$UFW_AFTER_RULES" | write_file "$UFW_AFTER_RULES" 0640
   with_docker_user_block "$UFW_AFTER6_RULES" | write_file "$UFW_AFTER6_RULES" 0640
+}
+
+# ufw applies its own sysctl file every time it loads (boot, enable, reload), and Ubuntu's
+# copy turns martian-packet logging off, silently undoing 30-kernel. Keep them in step.
+align_ufw_sysctl() {
+  [[ -f $UFW_SYSCTL ]] || return 0
+  sed -E 's#^(net/ipv4/conf/(all|default)/log_martians)=0#\1=1#' "$UFW_SYSCTL" | write_file "$UFW_SYSCTL" 0644
 }
 
 configure_docker_publish_default() {
@@ -122,9 +131,10 @@ ignoreip = 127.0.0.1/8 ::1 $SGS_FAIL2BAN_IGNOREIP
 [sshd]
 enabled = true
 # aggressive: also counts failed authenticator codes and connections that give up
-# after a rejected key, not only failed passwords.
+# after a rejected key, not only failed passwords. One mistyped code logs two matching
+# lines, so 10 lets a person fumble ~5 codes; bots without the key fail far faster.
 mode = aggressive
-maxretry = 5
+maxretry = 10
 findtime = 10m
 bantime = 1h
 # Repeat offenders get longer bans (1h, 2h, 4h, ... up to a week).
