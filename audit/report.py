@@ -568,6 +568,51 @@ def gpu_driver(h):
     return Result(INFO, t.splitlines()[0]) if t else Result(NA, "no NVIDIA driver")
 
 
+# --------------------------------------------------------- ML supply chain
+
+@check("ML supply chain", "Pickled checkpoints can't run code on load (torch weights-only)",
+       "A .pt/.bin checkpoint is a pickle: loading an untrusted one runs whatever code it carries.",
+       ["ml_defaults.txt", "torch_version.txt"])
+def ml_weights_only(h):
+    forced = "TORCH_FORCE_WEIGHTS_ONLY_LOAD=1" in (h.text("ml_defaults.txt") or "")
+    torch = (h.text("torch_version.txt") or "").strip()
+    version = torch if re.match(r"^\d+\.\d+", torch) else None
+    if forced:
+        return Result(PASS, "forced for all logins", "torch %s" % version if version else "PyTorch not installed")
+    if not version:
+        return Result(WARN, "not configured", "PyTorch not installed yet; nothing enforces safe loading when it is")
+    major_minor = tuple(int(x) for x in version.split(".")[:2])
+    if major_minor >= (2, 6):
+        return Result(WARN, "torch default only", "torch %s defaults to weights_only=True, but any script can pass False" % version)
+    return Result(FAIL, "torch.load runs pickled code", "torch %s defaults to weights_only=False" % version)
+
+
+@check("ML supply chain", "Model scanner available (sgs-scan-model)",
+       "Lets researchers check downloaded checkpoints for code before anyone loads them.",
+       ["model_scanner.txt"])
+def ml_scanner(h):
+    t = (h.text("model_scanner.txt") or "").strip()
+    if not t:
+        return Result(NA, "no data")
+    return Result(WARN, "none") if t == "none" else Result(PASS, t)
+
+
+@check("ML supply chain", "Package repositories are signature-verified",
+       "A repository marked trusted=yes lets anyone on the network path substitute packages.",
+       ["apt_sources.txt"])
+def pkg_sources_signed(h):
+    lines = h.lines("apt_sources.txt")
+    if not lines:
+        return Result(NA, "no data")
+    insecure = [l for l in lines if re.search(r"trusted=yes|allow-insecure=yes|allow-weak=yes|^Trusted:\s*yes", l, re.I)]
+    urls = sorted({u for l in lines for u in re.findall(r"https?://[^\s\]]+", l)})
+    third_party = [u for u in urls if not re.search(r"(archive|security|ports)\.ubuntu\.com|esm\.ubuntu\.com", u)]
+    detail = ("third-party: " + short_list(third_party, 4)) if third_party else "Ubuntu archives only"
+    if insecure:
+        return Result(FAIL, "%d unverified" % len(insecure), "; ".join(insecure[:3]))
+    return Result(PASS, "all signed", detail)
+
+
 # -------------------------------------------------------------------- kernel
 
 SYSCTL_WANT = {

@@ -44,6 +44,7 @@ Options:
   --out DIR          write results here instead of audit/results/<label>-<host>-<time>
   --no-trivy         skip the vulnerability scan (the slowest step)
   --no-lynis         skip the Lynis hardening scan
+  --sbom             also write a CycloneDX software bill of materials (needs trivy)
   --no-install       don't install missing scanners; skip them instead
   --no-apt-update    don't refresh package lists before counting pending updates
 EOF
@@ -214,6 +215,14 @@ collect_gpu() {
     'ps -eo user,pid,args --no-headers | grep -iE "[j]upyter|[n]otebook|[c]ode-server|[l]ambda" | sed -E "s/(token|password)=[^ ]*/\1=REDACTED/Ig"; systemctl list-unit-files --no-legend --no-pager | grep -iE "[j]upyter|[l]ambda|[c]ode-server"'
 }
 
+collect_supply_chain() {
+  cap apt_sources.txt bash -c \
+    'for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do [ -f "$f" ] && { echo "=== $f"; grep -vE "^[[:space:]]*(#|$)" "$f"; }; done'
+  cap ml_defaults.txt bash -c 'grep -rhs "TORCH_FORCE_WEIGHTS_ONLY_LOAD\|HF_HUB_DISABLE_TELEMETRY" /etc/profile.d/ /etc/environment || echo none'
+  cap model_scanner.txt bash -c 'command -v sgs-scan-model || echo none'
+  CAP_TIMEOUT=120 cap torch_version.txt python3 -c 'import torch; print(torch.__version__)'
+}
+
 collect_lynis() {
   have lynis || { warn "lynis not available; skipping"; return 0; }
   log "running Lynis (1-3 minutes)"
@@ -247,12 +256,22 @@ EOF
   gzip -f "$OUT/trivy.json"
 }
 
-LABEL="" OUT="" RUN_TRIVY=1 RUN_LYNIS=1 INSTALL=1 APT_UPDATE=1 TRIVY="" SSH_AUDIT_WHEEL=""
+collect_sbom() {
+  log "writing a CycloneDX SBOM of everything installed (another full filesystem pass)"
+  CAP_TIMEOUT=2400 cap sbom.log "$TRIVY" rootfs --quiet --format cyclonedx --output "$OUT/sbom.cdx.json" \
+    --skip-dirs /proc --skip-dirs /sys --skip-dirs /dev --skip-dirs /run \
+    --skip-dirs /var/lib/docker --skip-dirs /var/lib/containerd --skip-dirs /snap \
+    --skip-dirs /opt/sgs-audit --skip-dirs "$SGS_ROOT/audit/results" /
+  [[ -s $OUT/sbom.cdx.json ]] && gzip -f "$OUT/sbom.cdx.json"
+}
+
+LABEL="" OUT="" RUN_TRIVY=1 RUN_LYNIS=1 RUN_SBOM=0 INSTALL=1 APT_UPDATE=1 TRIVY="" SSH_AUDIT_WHEEL=""
 while (($#)); do
   case $1 in
     --out) OUT=${2:?--out needs a directory}; shift ;;
     --no-trivy) RUN_TRIVY=0 ;;
     --no-lynis) RUN_LYNIS=0 ;;
+    --sbom) RUN_SBOM=1 ;;
     --no-install) INSTALL=0 ;;
     --no-apt-update) APT_UPDATE=0 ;;
     -h|--help) usage; exit 0 ;;
@@ -286,8 +305,10 @@ collect_network
 collect_packages
 collect_kernel_and_logging
 collect_gpu
+collect_supply_chain
 ((RUN_LYNIS)) && collect_lynis
 ((RUN_TRIVY)) && collect_trivy
+((RUN_TRIVY && RUN_SBOM)) && collect_sbom
 
 # Let the invoking admin copy the results off the box without sudo.
 [[ -n ${SUDO_USER:-} ]] && chown -R "$SUDO_USER:" "$OUT"
