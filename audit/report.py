@@ -26,8 +26,9 @@ HIGH = ("CRITICAL", "HIGH")
 
 
 class Result:
-    def __init__(self, status, value, detail="", num=None):
+    def __init__(self, status, value, detail="", num=None, extra=None):
         self.status, self.value, self.detail, self.num = status, value, detail, num
+        self.extra = extra or {}
 
 
 class Check:
@@ -747,7 +748,7 @@ def vuln_result(h, cls, types=None, exclude_types=None):
         detail += "; most affected: " + ", ".join("%s (%d)" % pt for pt in top)
     value = "%d fixable critical/high" % len(fixable) + (" + %d kernel" % len(kernel) if kernel else "")
     status = FAIL if crit else WARN if fixable or kernel else PASS
-    return Result(status, value, detail, len(fixable))
+    return Result(status, value, detail, len(fixable), {"kernel": len(kernel)})
 
 
 @check("Vulnerabilities", "OS packages: fixable critical/high CVEs (Trivy)",
@@ -786,17 +787,28 @@ def lynis_index(h):
 
 # -------------------------------------------------------------------- output
 
+def _num(r):
+    return str(r.num) if r.num is not None else r.value
+
+
+def _yes_no(r):
+    return "no" if r.status == PASS else "yes" if r.status == FAIL else r.value
+
+
 HEADLINE = [
-    ("ssh_mfa", "Key alone enough to log in?", lambda r: "no" if r.status == PASS else r.value),
+    ("ssh_mfa", "Key alone enough to log in?", _yes_no),
     ("net_external", "Ports reachable from the internet", lambda r: r.value),
-    ("net_docker_bypass", "Docker bypasses the firewall?", lambda r: "no" if r.status == PASS else "yes" if r.status == FAIL else r.value),
-    ("pkg_security_updates", "Pending security updates", lambda r: str(r.num) if r.num is not None else r.value),
-    ("vuln_os", "Fixable critical/high CVEs (OS)", lambda r: r.value.replace(" fixable critical/high", "")),
-    ("vuln_binaries", "Fixable critical/high CVEs (Docker & other binaries)", lambda r: str(r.num) if r.num is not None else r.value),
-    ("vuln_python", "Fixable critical/high CVEs (Python packages)", lambda r: str(r.num) if r.num is not None else r.value),
+    ("net_docker_bypass", "Docker bypasses the firewall?", _yes_no),
+    ("pkg_security_updates", "Pending security updates", _num),
+    ("vuln_os", "OS package CVEs", _num),
+    ("vuln_os", "Kernel CVEs", lambda r: str(r.extra.get("kernel", r.value))),
+    ("vuln_binaries", "Docker & other binary CVEs", _num),
+    ("vuln_python", "Python package CVEs", _num),
     ("ssh_crypto", "ssh-audit findings", lambda r: r.value),
     ("lynis_index", "Lynis hardening index", lambda r: r.value),
 ]
+HEADLINE_NOTE = ("CVE counts are unique critical/high CVEs (Trivy) that already have a fixed version. "
+                 "Kernel CVEs are fixed by installing a newer kernel and rebooting.")
 
 NOTES = [
     "Each check lists the raw files it read; they are in the results directories named above.",
@@ -831,6 +843,13 @@ def scorecard(results, other=None):
 def host_label(host):
     m = host.meta
     return "%s (%s)" % (m.get("label", host.name), m.get("hostname", "?"))
+
+
+def compared_hosts(before, after):
+    hb, ha = before.meta.get("hostname", "?"), after.meta.get("hostname", "?")
+    if hb == ha:
+        return "One machine (%s), audited before and after" % hb
+    return "Before: %s · After: %s" % (host_label(before), host_label(after))
 
 
 def print_single(host):
@@ -871,6 +890,7 @@ def build_markdown(before, after, rb, ra):
             "| **Checks passed** | **%d / %d** | **%d / %d** |" % (pb, tb, pa, ta)]
     for cid, label, fmt in HEADLINE:
         out.append("| %s | %s | %s |" % (label, md_escape(fmt(rb[cid])), md_escape(fmt(ra[cid]))))
+    out += ["", "_%s_" % HEADLINE_NOTE]
     area = None
     for c in CHECKS:
         if c.area != area:
@@ -901,11 +921,14 @@ body { margin:0; background:var(--bg); color:var(--fg);
 main { max-width:1100px; margin:0 auto; padding:32px 20px 64px; }
 h1 { font-size:26px; margin:0 0 4px; } h2 { font-size:18px; margin:36px 0 10px; }
 .sub { color:var(--muted); margin:0 0 24px; }
-.tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; }
-.tile { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
-.tile .k { color:var(--muted); font-size:13px; }
-.tile .v { font-size:20px; font-weight:600; margin-top:4px; font-variant-numeric:tabular-nums; }
-.tile .v .arrow { color:var(--muted); font-weight:400; padding:0 6px; }
+.tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:12px; }
+.tile { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+        display:flex; flex-direction:column; }
+.tile .k { color:var(--muted); font-size:13px; line-height:1.35; }
+.tile .v { font-size:30px; font-weight:650; line-height:1.15; margin:8px 0 12px; font-variant-numeric:tabular-nums; }
+.tile .was { margin-top:auto; padding-top:10px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+.tile .was b { color:var(--fg); font-weight:600; }
+.tiles-note { color:var(--muted); font-size:13px; margin:10px 0 0; }
 .scroll { overflow-x:auto; }
 table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line);
         border-radius:10px; overflow:hidden; font-size:14px; }
@@ -936,15 +959,14 @@ def build_html(before, after, rb, ra):
          "<meta name='viewport' content='width=device-width, initial-scale=1'>",
          "<title>Secure GPU Stack report</title><style>%s</style></head><body><main>" % CSS,
          "<h1>Secure GPU Stack: before/after security report</h1>",
-         "<p class='sub'>%s &rarr; %s &middot; %s &middot; %s</p>" % (
-             e(host_label(before)), e(host_label(after)), e(after.meta.get("os", "")), e(after.meta.get("gpu", ""))),
-         "<div class='tiles'>",
-         "<div class='tile'><div class='k'>Checks passed</div><div class='v'>%d/%d<span class='arrow'>&rarr;</span>%d/%d</div></div>"
-         % (pb, tb, pa, ta)]
+         "<p class='sub'>%s &middot; %s &middot; %s</p>" % (
+             e(compared_hosts(before, after)), e(after.meta.get("os", "")), e(after.meta.get("gpu", ""))),
+         "<div class='tiles'>"]
+    tile = "<div class='tile'><div class='k'>%s</div><div class='v'>%s</div><div class='was'>Before: <b>%s</b></div></div>"
+    p.append(tile % ("Checks passed", "%d / %d" % (pa, ta), "%d / %d" % (pb, tb)))
     for cid, label, fmt in HEADLINE:
-        p.append("<div class='tile'><div class='k'>%s</div><div class='v'>%s<span class='arrow'>&rarr;</span>%s</div></div>"
-                 % (e(label), e(fmt(rb[cid])), e(fmt(ra[cid]))))
-    p.append("</div>")
+        p.append(tile % (e(label), e(fmt(ra[cid])), e(fmt(rb[cid]))))
+    p.append("</div><p class='tiles-note'>%s</p>" % e(HEADLINE_NOTE))
     area = None
     for c in CHECKS:
         if c.area != area:
