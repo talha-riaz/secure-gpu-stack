@@ -15,14 +15,54 @@
 #     box mid-training is the wrong failure mode here.
 
 AUDIT_RULES=/etc/audit/rules.d/60-secure-gpu-stack.rules
+RELOAD_UNIT=sgs-audit-rules-reload.service
 : "${SGS_AUDIT_IMMUTABLE:=0}"
 
 module_main() {
   apt_install auditd
   audit_rules | write_file "$AUDIT_RULES" 0640
+  reload_after_boot
   run systemctl enable --now auditd
   if is_dry; then run augenrules --load; else augenrules --load >/dev/null; fi   # it prints auditctl -s per file
-  is_dry || ok "audit rules loaded: $(auditctl -l | grep -c '^-') (search: sudo ausearch -i -k <key>; add --input-logs in scripts)"
+  is_dry || verify_rules
+}
+
+# auditd loads its rules early in boot, before every home directory necessarily exists
+# (cloud-init creates and mounts them later). A watch on a missing ~/.ssh fails, and on
+# the Lambda instance /home/ubuntu/.ssh was unwatched after a reboot. Load the rules once
+# more when the system starts accepting logins, by which point every home exists.
+reload_after_boot() {
+  if ((SGS_AUDIT_IMMUTABLE)); then
+    warn "immutable audit rules: ~/.ssh watches for homes missing at early boot stay off until the next reboot"
+    return 0
+  fi
+  write_file "/etc/systemd/system/$RELOAD_UNIT" 0644 <<'EOF'
+# Managed by secure-gpu-stack.
+[Unit]
+Description=Reload audit rules once home directories exist
+After=auditd.service local-fs.target remote-fs.target systemd-user-sessions.service
+Requires=auditd.service
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/augenrules --load
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  run systemctl daemon-reload
+  run systemctl enable "$RELOAD_UNIT"
+}
+
+verify_rules() {
+  local expected loaded
+  expected=$(grep -c -E '^-[aw] ' /etc/audit/audit.rules || true)
+  loaded=$(auditctl -l | grep -c -E '^-[aw] ' || true)
+  if ((loaded < expected)); then
+    warn "only $loaded of $expected audit rules loaded; see: sudo augenrules --load"
+  else
+    ok "audit rules loaded: $loaded (search: sudo ausearch -i -k <key>; add --input-logs in scripts)"
+  fi
 }
 
 audit_rules() {
@@ -67,6 +107,8 @@ audit_rules() {
 -w /root/.ssh/ -p wa -k ssh_keys
 EOF
   # Existing accounts' ~/.ssh; accounts created later need a re-run of the installer.
+  # -i: a home that doesn't exist yet at early boot must not stop the rules after it.
+  echo "-i"
   while IFS=: read -r user _ _ _ _ home _; do
     [[ $user != root && -d $home/.ssh ]] && echo "-w $home/.ssh/ -p wa -k ssh_keys"
   done < <(getent passwd)
