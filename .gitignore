@@ -21,3 +21,7 @@ VERSION
 # Editor settings
 .idea/
 .vscode/
+
+# Reports regenerated locally with: python3 audit/report.py ... -o report
+/report.md
+/report.html
