@@ -1,5 +1,0 @@
-PASS CUDA available to PyTorch                        torch 2.7.0 on NVIDIA A10 (matmul ok, sum=-721.4)
-PASS sgs-scan-model flags the checkpoint              exit 1, dangerous import reported
-PASS torch.load refuses code (weights_only=False)     refused (UnpicklingError), payload did not run; TORCH_FORCE_WEIGHTS_ONLY_LOAD=1
-
-3/3 passed

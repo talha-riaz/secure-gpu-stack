@@ -1,2 +1,0 @@
-644 root:root /etc/cloudflared/config.yml
-600 root:root /etc/cloudflared/jupyter-tunnel.json

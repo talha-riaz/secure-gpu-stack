@@ -8,7 +8,7 @@
 | Collected | 2026-10-29T19:47:07+00:00 | 2026-10-29T21:30:56+00:00 |
 | Secure GPU Stack installed | no | yes |
 | Version | unknown | 192aba1 |
-| Results | `before` | `patched` |
+| Results | `before` | `after` |
 
 ## Headline
 
@@ -115,4 +115,4 @@ _CVE counts are unique critical/high CVEs (Trivy) that already have a fixed vers
 - Vulnerability counts are unique CVE IDs rated critical or high by Trivy that already have a fixed version. Python package CVEs are reported for triage: upgrading ML libraries can break research code, so the stack does not auto-upgrade them. Container runtime and other third-party binaries are auto-updated.
 - Lynis is a broad heuristic; it is shown for context, not used as the measure of success.
 
-_Generated 2026-10-29 18:15 by `audit/report.py`._
+_Generated 2026-10-29 18:36 by `audit/report.py`._

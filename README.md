@@ -30,8 +30,7 @@ run.
 **Reviewing this quickly:**
 1. Start with the [requirement-to-evidence map](evidence/README.md#requirement--evidence): every claim has a raw
    file or a recording next to it.
-2. Then read [FINDINGS.md](docs/FINDINGS.md): what the stock image exposes, and the bugs that only showed up on
-   real hardware.
+2. Then read [FINDINGS.md](docs/FINDINGS.md): what the stock image exposes, and what is still open.
 3. The core of the challenge is [`modules/10-ssh-mfa.sh`](modules/10-ssh-mfa.sh) and
    [`bin/sgs-enroll`](bin/sgs-enroll).
 
@@ -39,9 +38,9 @@ run.
 
 | Ask | What was built | Proof |
 |---|---|---|
-| "for each ssh to require a microsoft or google authenticator app approval to get in" | Every new SSH connection needs the key, then a 6-digit code (TOTP, the standard both apps implement). Without both, nobody gets in. There are no passwords and no root login, and accounts that haven't set up a code are refused. | [key alone, before](evidence/media/ssh-before-key-alone-logs-in.gif) · [key + code](evidence/media/ssh-after-key-and-code.gif) · [key alone, refused](evidence/media/ssh-after-key-alone-denied.gif) · [wrong code, refused](evidence/media/ssh-after-wrong-code-denied.gif) · [`sshd_T.txt`](evidence/lambda-a10/patched/sshd_T.txt) · [`ssh_server_log.txt`](evidence/lambda-a10/hardened/ssh_server_log.txt) |
-| "improve the starting stack that loads with the gpu in ways it can be more secure" | Seven modules on top of Lambda Stack: [SSH](modules/10-ssh-mfa.sh), [firewall](modules/20-firewall.sh), [kernel](modules/30-kernel.sh), [audit trail](modules/40-audit-logging.sh), [updates](modules/50-updates.sh), [GPU and IDE](modules/60-gpu.sh), [ML supply chain](modules/70-supply-chain.sh) | [report](evidence/report.md): 8 → 30 of 33 checks; [GPU smoke test](evidence/lambda-a10/patched/gpu_smoke.txt) 3/3 |
-| "compare the images" | The stock Lambda Stack image and the hardened one, audited by the same tool on the same instance: stock, hardened, and after a kernel update and reboot | [`evidence/lambda-a10/`](evidence/lambda-a10/) ([before](evidence/lambda-a10/before/) · [hardened](evidence/lambda-a10/hardened/) · [patched](evidence/lambda-a10/patched/)) |
+| "for each ssh to require a microsoft or google authenticator app approval to get in" | Every new SSH connection needs the key, then a 6-digit code (TOTP, the standard both apps implement). Without both, nobody gets in. There are no passwords and no root login, and accounts that haven't set up a code are refused. | [key alone, before](evidence/media/ssh-before-key-alone-logs-in.gif) · [key + code](evidence/media/ssh-after-key-and-code.gif) · [key alone, refused](evidence/media/ssh-after-key-alone-denied.gif) · [wrong code, refused](evidence/media/ssh-after-wrong-code-denied.gif) · [`sshd_T.txt`](evidence/lambda-a10/after/sshd_T.txt) · [`ssh_server_log.txt`](evidence/lambda-a10/extra/ssh_server_log.txt) |
+| "improve the starting stack that loads with the gpu in ways it can be more secure" | Seven modules on top of Lambda Stack: [SSH](modules/10-ssh-mfa.sh), [firewall](modules/20-firewall.sh), [kernel](modules/30-kernel.sh), [audit trail](modules/40-audit-logging.sh), [updates](modules/50-updates.sh), [GPU and IDE](modules/60-gpu.sh), [ML supply chain](modules/70-supply-chain.sh) | [report](evidence/report.md): 8 → 30 of 33 checks; [GPU smoke test](evidence/lambda-a10/after/gpu_smoke.txt) 3/3 |
+| "compare the images" | The stock Lambda Stack image and the hardened one, audited by the same tool on the same instance: stock, then after install, a kernel update and a reboot | [`evidence/lambda-a10/`](evidence/lambda-a10/) ([before](evidence/lambda-a10/before/) · [after](evidence/lambda-a10/after/)) |
 | "the cheapest gpu" | `gpu_1x_a10` | [instance](evidence/media/lambda-instance-running.png) |
 
 **"Approval" is a code, not a push notification.** Both apps can approve a login in two ways:
@@ -103,7 +102,7 @@ sudo ./install.sh              # scan the QR code with Google or Microsoft Authe
 
 Keep that session open. In a new terminal, `ssh ubuntu@<ip>` should now ask for `Verification code:`. A full
 install takes a few minutes, most of it applying the security updates. Running it again changes nothing
-([proof](evidence/lambda-a10/patched/install_rerun.log)). `./install.sh --list`, `--only` and `--skip` select
+([proof](evidence/lambda-a10/after/install_rerun.log)). `./install.sh --list`, `--only` and `--skip` select
 modules.
 
 | Setting | Effect |
@@ -127,7 +126,7 @@ sgs-scan-model ./downloaded-model.bin      # check a checkpoint before loading i
 ```
 
 **Maintenance window** for the held kernel, driver and CUDA updates. This is what produced the
-[`patched`](evidence/lambda-a10/patched/) evidence:
+[`after`](evidence/lambda-a10/after/) evidence:
 
 ```bash
 sudo SGS_PATCH_ALL=1 ./install.sh --only updates && sudo reboot
@@ -153,7 +152,7 @@ python3 audit/report.py <before-results> <after-results> -o report  # writes rep
   firewall test has something to block.
 
 To reproduce the report in this repository from the raw evidence:
-`python3 audit/report.py evidence/lambda-a10/before evidence/lambda-a10/patched`.
+`python3 audit/report.py evidence/lambda-a10/before evidence/lambda-a10/after`.
 
 **No GPU needed** to try it: [`tests/lima/create_vm.sh`](tests/lima/create_vm.sh) builds a local Ubuntu 22.04 VM
 (macOS or Linux, via Lima), and [`tests/lima/iterate.sh`](tests/lima/iterate.sh) runs install → audit → report
@@ -203,16 +202,12 @@ second run that rewrote 0 files; a real reboot that kept every setting.
 
 **On a real Lambda `gpu_1x_a10`** ([evidence](evidence/README.md)):
 1. Audit of the stock image.
-2. Install.
-3. Audit again, with the recordings above.
-4. Maintenance window: held updates installed, real reboot, previous kernel removed.
-5. Final audit.
-6. A full re-run.
+2. Install, then the recordings above.
+3. Maintenance window: held updates installed, real reboot, previous kernel removed.
+4. Final audit.
+5. A full re-run.
 
-The real hardware found bugs the VMs couldn't, all fixed and listed in
-[FINDINGS.md](docs/FINDINGS.md#bugs-found-by-running-on-real-hardware): Lambda's repository priority downgrading
-the container toolkit, an Ubuntu file undoing a kernel setting at boot, and audit rules lost at boot. All shell
-code passes `shellcheck`.
+All shell code passes `shellcheck`.
 
 ## Repository layout
 

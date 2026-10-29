@@ -1,6 +1,0 @@
-ubuntu     57906 /home/ubuntu/.local/pipx/venvs/jupyter-core/bin/python /home/ubuntu/.local/pipx/venvs/jupyter-core/bin/jupyter-lab --no-browser --ip 127.0.0.1 --port 8888 --IdentityProvider.token=REDACTED
-cloudflared-update.service                                                    masked          enabled
-cloudflared.service                                                           masked          enabled
-lambda-first-boot.service                                                     enabled         enabled
-lambda-jupyter.service                                                        masked          enabled
-cloudflared-update.timer                                                      disabled        enabled

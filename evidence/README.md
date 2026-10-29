@@ -11,24 +11,26 @@ PyTorch 2.7.0). The instance has since been terminated.
 Regenerate the report from the raw files (Python 3 standard library only):
 
 ```bash
-python3 audit/report.py evidence/lambda-a10/before evidence/lambda-a10/patched -o evidence/report
+python3 audit/report.py evidence/lambda-a10/before evidence/lambda-a10/after -o evidence/report
 ```
 
-## The three audits
+## The two audits
 
-Each run is a folder of raw command output written by [`audit/run_audit.sh`](../audit/run_audit.sh)
+Each audit is a folder of raw command output written by [`audit/run_audit.sh`](../audit/run_audit.sh)
 on the instance, plus `external.json` from [`audit/external_scan.py`](../audit/external_scan.py)
 run from the tester's laptop. `meta.txt` in each folder records the host, kernel, time and code version.
 
-| Run | Collected (UTC) | Code | Kernel | State | Checks passed |
+| Folder | Collected (UTC) | Code | Kernel | State | Checks passed |
 |---|---|---|---|---|---|
 | [`before/`](lambda-a10/before/) | 19:47 | none | 6.8.0-1046-nvidia | Stock Lambda Stack image | 8 / 33 |
-| [`hardened/`](lambda-a10/hardened/) | 20:59 | `ff52559` | 6.8.0-1046-nvidia | `install.sh` applied; no reboot, no downtime | 28 / 33 |
-| [`patched/`](lambda-a10/patched/) | 21:30 | `192aba1` | 6.8.0-1064-nvidia | After the maintenance window: held kernel updates installed, rebooted, old kernel removed | **30 / 33** |
+| [`after/`](lambda-a10/after/) | 21:30 | `192aba1` | 6.8.0-1064-nvidia | `install.sh` applied, then the maintenance window: held kernel updates installed, rebooted, old kernel removed | **30 / 33** |
 
-Run `python3 audit/report.py evidence/lambda-a10/before evidence/lambda-a10/hardened` for the intermediate comparison.
+[`extra/`](lambda-a10/extra/) holds four files collected at 20:27–21:00 UTC, right after `install.sh` and
+before the maintenance window (the state the recordings show): the server's SSH log, an audit-trail sample, a
+check of the container-runtime updates, and the upgrade preview that exposed Lambda's repository downgrading the
+container toolkit ([finding 8](../docs/FINDINGS.md#the-stock-lambda-stack-image)).
 
-Same conditions for all three, so the comparison is fair:
+Same conditions for both audits, so the comparison is fair:
 
 - **Demo services.** [`audit/demo_services.sh`](../audit/demo_services.sh) was started before every audit: a
   plain web server on `0.0.0.0:8000` and a Docker container published with `-p 0.0.0.0:8080`. They stand in for
@@ -45,22 +47,22 @@ Same conditions for all three, so the comparison is fair:
 | Claim | Evidence (before → after) |
 |---|---|
 | A key alone logged in on the stock image | [`before/ssh_login.txt`](lambda-a10/before/ssh_login.txt) ("Authenticated using publickey"), [`before/sshd_T.txt`](lambda-a10/before/sshd_T.txt), [GIF](media/ssh-before-key-alone-logs-in.gif) |
-| Every SSH login now needs key **and** authenticator code | [`patched/sshd_T.txt`](lambda-a10/patched/sshd_T.txt) (`authenticationmethods publickey,keyboard-interactive`), [`patched/pam_sshd.txt`](lambda-a10/patched/pam_sshd.txt) (`pam_google_authenticator`, no `nullok`), [`patched/ssh_users.tsv`](lambda-a10/patched/ssh_users.tsv) (effective policy per account) |
-| Login sequence on the server: key accepted, then the code | [`hardened/ssh_server_log.txt`](lambda-a10/hardened/ssh_server_log.txt) (`Partial publickey` → `Accepted keyboard-interactive/pam`) |
+| Every SSH login now needs key **and** authenticator code | [`after/sshd_T.txt`](lambda-a10/after/sshd_T.txt) (`authenticationmethods publickey,keyboard-interactive`), [`after/pam_sshd.txt`](lambda-a10/after/pam_sshd.txt) (`pam_google_authenticator`, no `nullok`), [`after/ssh_users.tsv`](lambda-a10/after/ssh_users.tsv) (effective policy per account) |
+| Login sequence on the server: key accepted, then the code | [`extra/ssh_server_log.txt`](lambda-a10/extra/ssh_server_log.txt) (`Partial publickey` → `Accepted keyboard-interactive/pam`) |
 | Key + code accepted; wrong code, key alone, and repeat offenders refused | GIFs: [accepted](media/ssh-after-key-and-code.gif), [wrong code](media/ssh-after-wrong-code-denied.gif), [key alone](media/ssh-after-key-alone-denied.gif), [banned](media/ssh-after-fail2ban-ban.gif); [`fail2ban_ban.txt`](lambda-a10/fail2ban_ban.txt) |
 | Enrollment: QR for Google/Microsoft Authenticator, confirmed by a code before it takes effect | [`media/enrollment-redacted.png`](media/enrollment-redacted.png), [`install.log`](lambda-a10/install.log) |
-| Secrets are root-only, never in the user's home | [`patched/totp_store.txt`](lambda-a10/patched/totp_store.txt) |
-| SSH crypto: 6 fail / 16 warn → 0 fail / 5 warn | [`before/ssh_audit.txt`](lambda-a10/before/ssh_audit.txt) → [`patched/ssh_audit.txt`](lambda-a10/patched/ssh_audit.txt) |
+| Secrets are root-only, never in the user's home | [`after/totp_store.txt`](lambda-a10/after/totp_store.txt) |
+| SSH crypto: 6 fail / 16 warn → 0 fail / 5 warn | [`before/ssh_audit.txt`](lambda-a10/before/ssh_audit.txt) → [`after/ssh_audit.txt`](lambda-a10/after/ssh_audit.txt) |
 | Browser IDE gave a root shell with no SSH key or code | [`before/cloud_ide.txt`](lambda-a10/before/cloud_ide.txt), [`before/tunnel_creds.txt`](lambda-a10/before/tunnel_creds.txt) (644), [GIF](media/cloud-ide-before-root-shell.gif), [screenshot](media/before-cloud-ide-root-shell.png) |
-| …now closed, and it stays closed after a reboot | [`patched/ide_processes.txt`](lambda-a10/patched/ide_processes.txt) (masked), [`patched/tunnel_creds.txt`](lambda-a10/patched/tunnel_creds.txt) (600), [`patched/reboot_check.txt`](lambda-a10/patched/reboot_check.txt), [screenshot](media/after-cloud-ide-down.png) |
-| Ports reachable from outside: 22, 111, 8000, 8080 → 22 | [`before/external.json`](lambda-a10/before/external.json) → [`patched/external.json`](lambda-a10/patched/external.json), GIFs: [before](media/ports-before-exposed.gif), [after](media/ports-after-blocked.gif) |
-| Docker no longer bypasses the host firewall | [`before/iptables_filter.txt`](lambda-a10/before/iptables_filter.txt) → [`patched/iptables_filter.txt`](lambda-a10/patched/iptables_filter.txt) (`DOCKER-USER` drop), [`patched/docker_daemon.json`](lambda-a10/patched/docker_daemon.json), [`hardened/container_updates_verification.txt`](lambda-a10/hardened/container_updates_verification.txt) |
-| Security updates: 202 pending → 0; kernel CVEs 404 → 0 | [`before/apt_upgrades.txt`](lambda-a10/before/apt_upgrades.txt) → [`patched/apt_upgrades.txt`](lambda-a10/patched/apt_upgrades.txt), [`patched/maintenance.log`](lambda-a10/patched/maintenance.log), [`patched/old_kernel_purge.txt`](lambda-a10/patched/old_kernel_purge.txt), `*/trivy_summary.json` |
-| GPU still works after hardening and after the new kernel | [`patched/gpu_smoke.txt`](lambda-a10/patched/gpu_smoke.txt) (3/3), [`patched/docker_gpu.txt`](lambda-a10/patched/docker_gpu.txt), [`patched/gpu_smi.txt`](lambda-a10/patched/gpu_smi.txt), [GIF](media/gpu-in-container-after.gif) |
-| A booby-trapped checkpoint runs code on the stock image, is refused after | [`before/gpu_smoke.txt`](lambda-a10/before/gpu_smoke.txt) (1/3) → [`patched/gpu_smoke.txt`](lambda-a10/patched/gpu_smoke.txt) (3/3), GIFs: [before](media/pickle-before-runs-code.gif), [after](media/pickle-after-blocked.gif) |
-| Hardening survives a real reboot | [`patched/reboot_check.txt`](lambda-a10/patched/reboot_check.txt) (boot IDs before/after; MFA, firewall, Docker rules, IDE and tunnel masks, auditd). Two items did **not** survive the Lambda reboot and were fixed afterwards, then verified with a real reboot of a fresh VM: `fs.protected_fifos` ([`patched/sysctl_after_reboot_before_fix.txt`](lambda-a10/patched/sysctl_after_reboot_before_fix.txt); fix `192aba1`) and the audit watch on `/home/ubuntu/.ssh` ([`hardened/auditd.txt`](lambda-a10/hardened/auditd.txt) 23 rules → [`patched/auditd.txt`](lambda-a10/patched/auditd.txt) 22; fix `e69acdf`). See [FINDINGS](../docs/FINDINGS.md#bugs-found-by-running-on-real-hardware) |
-| Safe to re-run: second run changes nothing | [`patched/install_rerun.log`](lambda-a10/patched/install_rerun.log) ("files rewritten by this run: 0") |
-| Audit trail attributes root actions to the person who logged in | [`hardened/audit_trail_sample.txt`](lambda-a10/hardened/audit_trail_sample.txt) (`auid=ubuntu` on sudo actions) |
+| …now closed, and it stays closed after a reboot | [`after/ide_processes.txt`](lambda-a10/after/ide_processes.txt) (masked), [`after/tunnel_creds.txt`](lambda-a10/after/tunnel_creds.txt) (600), [`after/reboot_check.txt`](lambda-a10/after/reboot_check.txt), [screenshot](media/after-cloud-ide-down.png) |
+| Ports reachable from outside: 22, 111, 8000, 8080 → 22 | [`before/external.json`](lambda-a10/before/external.json) → [`after/external.json`](lambda-a10/after/external.json), GIFs: [before](media/ports-before-exposed.gif), [after](media/ports-after-blocked.gif) |
+| Docker no longer bypasses the host firewall | [`before/iptables_filter.txt`](lambda-a10/before/iptables_filter.txt) → [`after/iptables_filter.txt`](lambda-a10/after/iptables_filter.txt) (`DOCKER-USER` drop), [`after/docker_daemon.json`](lambda-a10/after/docker_daemon.json), [`extra/container_updates_verification.txt`](lambda-a10/extra/container_updates_verification.txt) |
+| Security updates: 202 pending → 0; kernel CVEs 404 → 0 | [`before/apt_upgrades.txt`](lambda-a10/before/apt_upgrades.txt) → [`after/apt_upgrades.txt`](lambda-a10/after/apt_upgrades.txt), [`after/maintenance.log`](lambda-a10/after/maintenance.log), [`after/old_kernel_purge.txt`](lambda-a10/after/old_kernel_purge.txt), `*/trivy_summary.json` |
+| GPU still works after hardening and after the new kernel | [`after/gpu_smoke.txt`](lambda-a10/after/gpu_smoke.txt) (3/3), [`after/docker_gpu.txt`](lambda-a10/after/docker_gpu.txt), [`after/gpu_smi.txt`](lambda-a10/after/gpu_smi.txt), [GIF](media/gpu-in-container-after.gif) |
+| A booby-trapped checkpoint runs code on the stock image, is refused after | [`before/gpu_smoke.txt`](lambda-a10/before/gpu_smoke.txt) (1/3) → [`after/gpu_smoke.txt`](lambda-a10/after/gpu_smoke.txt) (3/3), GIFs: [before](media/pickle-before-runs-code.gif), [after](media/pickle-after-blocked.gif) |
+| Hardening survives a real reboot | [`after/reboot_check.txt`](lambda-a10/after/reboot_check.txt) (boot IDs before/after; MFA, firewall, Docker rules, IDE and tunnel masks, auditd). Two items did **not** survive the Lambda reboot; both were fixed afterwards and verified with a real reboot of a fresh VM: `fs.protected_fifos` ([`after/sysctl_after_reboot_before_fix.txt`](lambda-a10/after/sysctl_after_reboot_before_fix.txt) shows 1; fixed in `192aba1` before the final audit, which shows 21/21) and the audit watch on `/home/ubuntu/.ssh` (missing from [`after/auditd.txt`](lambda-a10/after/auditd.txt); fixed in `e69acdf`, not re-run on Lambda) |
+| Safe to re-run: second run changes nothing | [`after/install_rerun.log`](lambda-a10/after/install_rerun.log) ("files rewritten by this run: 0") |
+| Audit trail attributes root actions to the person who logged in | [`extra/audit_trail_sample.txt`](lambda-a10/extra/audit_trail_sample.txt) (`auid=ubuntu` on sudo actions) |
 | What would change, before changing it | [`dry-run.txt`](lambda-a10/dry-run.txt) |
 
 ## Recordings
@@ -88,7 +90,7 @@ Recorded on the tester's Mac against the instance; most clips print the date fir
 Nothing here was edited except as listed:
 
 - **The tester's home IP** is replaced by `198.51.100.7` (a reserved documentation address, RFC 5737) in
-  `fail2ban_ban.txt` and `hardened/ssh_server_log.txt`, and covered in `media/lambda-demo-ruleset-my-ip-only.png`.
+  `fail2ban_ban.txt` and `extra/ssh_server_log.txt`, and covered in `media/lambda-demo-ruleset-my-ip-only.png`.
 - **Enrollment**: the full recording shows a live QR code, secret and emergency codes, so it isn't published.
   [`media/enrollment-redacted.png`](media/enrollment-redacted.png) is one frame of it with those three blurred.
   The installer itself never writes them to `install.log`.
