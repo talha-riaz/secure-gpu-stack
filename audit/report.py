@@ -521,11 +521,31 @@ def gpu_browser_ide(h):
     if not ide:
         return Result(PASS, "none running")
     pids = {l.split()[1] for l in ide}
+    listening = {pid for _, _, pid in listeners(h)}
     public = ["%s (%s)" % (p, proc) for p, proc, pid in listeners(h) if pid in pids]
-    summary = "; ".join(" ".join(l.split()[2:5]) for l in ide[:2])
+    ide.sort(key=lambda l: l.split()[1] not in listening)  # the one serving the IDE first
+    summary = "; ".join(" ".join(l.split()[2:6]) for l in ide[:2])
     if public:
         return Result(FAIL, "listening on " + ", ".join(public), summary)
     return Result(WARN, "%d IDE process(es) running" % len(ide), summary + "; check how it is reached")
+
+
+TOOLKIT_MIN = (1, 17, 8)
+
+
+@check("GPU & ML tooling", "NVIDIA Container Toolkit has the container-escape fixes",
+       "Before 1.17.8 a malicious container image can take over the host (CVE-2024-0132, CVE-2025-23266). "
+       "It comes from NVIDIA's repository, so OS scanners miss it.",
+       ["gpu_packages.txt"])
+def gpu_container_toolkit(h):
+    version = next((l.split("\t")[1] for l in h.lines("gpu_packages.txt")
+                    if l.startswith("nvidia-container-toolkit\t")), None)
+    if not version:
+        return Result(NA, "not installed")
+    upstream = tuple(int(x) for x in re.findall(r"\d+", version.split("-")[0])[:3])
+    if upstream >= TOOLKIT_MIN:
+        return Result(PASS, version)
+    return Result(FAIL, version, "older than %s: container escape to the host" % ".".join(map(str, TOOLKIT_MIN)))
 
 
 @check("GPU & ML tooling", "GPU device permissions",
