@@ -14,6 +14,8 @@ TOTP_DIR=$SGS_STATE_DIR/totp
 SSHD_DROPIN=/etc/ssh/sshd_config.d/00-secure-gpu-stack.conf
 PAM_SSHD=/etc/pam.d/sshd
 MODULI=/etc/ssh/moduli
+# Evaluate sshd Match blocks as for a client on the internet (TEST-NET-3, never routed).
+PROBE_ADDR=203.0.113.10
 : "${SGS_SSH_MAX_SESSIONS:=1}"
 
 # shellcheck disable=SC2016  # ${USER} is expanded by PAM at login, not by bash
@@ -31,7 +33,7 @@ module_main() {
   run install -m 0755 "$SGS_ROOT/bin/sgs-enroll" /usr/local/sbin/sgs-enroll
   enroll_admin
   apply_sshd_and_pam
-  warn_unenrolled_users
+  check_all_accounts
 }
 
 check_admin_user() {
@@ -74,6 +76,9 @@ PermitRootLogin no
 HostbasedAuthentication no
 MaxAuthTries 3
 LoginGraceTime 30
+# At most 3 unauthenticated connections per source IP at a time: blunts the DHEat
+# key-exchange CPU flood (CVE-2002-20001), which fail2ban can't see (no failed login).
+PerSourceMaxStartups 3
 
 # One session per connection, so client-side multiplexing (ControlMaster)
 # can't turn a single code into many shells. Set SGS_SSH_MAX_SESSIONS to relax.
@@ -150,7 +155,7 @@ apply_sshd_and_pam() {
 
 verify_effective_config() {
   local eff
-  eff=$(sshd -T -C user="$SGS_USER",host=localhost,addr=127.0.0.1)
+  eff=$(sshd -T -C "user=$SGS_USER,host=check.invalid,addr=$PROBE_ADDR")
   grep -qx 'authenticationmethods publickey,keyboard-interactive' <<<"$eff" || die "AuthenticationMethods not in effect"
   grep -qx 'passwordauthentication no' <<<"$eff" || die "PasswordAuthentication still on"
   grep -qx 'permitrootlogin no' <<<"$eff" || die "PermitRootLogin still on"
@@ -159,10 +164,21 @@ verify_effective_config() {
   ! grep -Eq '^[[:space:]]*@include common-auth' "$PAM_SSHD" || die "password step still active in $PAM_SSHD"
 }
 
-warn_unenrolled_users() {
-  local user home
+# Every non-root account holding SSH keys: flag any that a Match block exempts from the
+# code (a key alone would let it in), and any that can't log in until enrolled.
+check_all_accounts() {
+  local user home methods
   while IFS=: read -r user _ _ _ _ home _; do
-    [[ -s $home/.ssh/authorized_keys && ! -s $TOTP_DIR/$user ]] || continue
+    [[ $user != root && -s $home/.ssh/authorized_keys ]] || continue
+    if ! is_dry; then
+      methods=$(sshd -T -C "user=$user,host=check.invalid,addr=$PROBE_ADDR" 2>/dev/null \
+        | awk '$1 == "authenticationmethods" { print $2 }')
+      if [[ $methods != "publickey,keyboard-interactive" ]]; then
+        warn "$user is EXEMPT from MFA (sshd Match block sets AuthenticationMethods $methods): a key alone lets it in"
+        continue
+      fi
+    fi
+    [[ -s $TOTP_DIR/$user ]] && continue
     is_dry && [[ $user == "$SGS_USER" ]] && continue   # would be enrolled by a real run
     warn "$user has SSH keys but no MFA enrollment, so can no longer log in. Enroll with: sudo sgs-enroll $user"
   done < <(getent passwd)
