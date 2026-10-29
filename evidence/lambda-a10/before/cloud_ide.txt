@@ -1,0 +1,35 @@
+# Lambda Cloud IDE wiring on the stock instance (secrets redacted), 2026-10-29T19:54:54Z
+
+## Service running JupyterLab
+Description=Lambda Jupyter Lab
+ExecStart=/home/ubuntu/.local/bin/jupyter lab --config /home/ubuntu/.jupyter/jupyter_config.py
+User=ubuntu
+
+## Jupyter listens on localhost only
+LISTEN 0 128 127.0.0.1:7000 0.0.0.0:* users:(("jupyter-lab",pid=2169,fd=7)) 
+# c.ServerApp.port_retries = 50
+c.ServerApp.ip = '127.0.0.1'
+c.ServerApp.port = 7000
+c.ServerApp.allow_remote_access = True
+
+## Published by an outbound cloudflared tunnel
+ExecStart=/usr/bin/cloudflared --no-autoupdate --config /etc/cloudflared/config.yml tunnel run
+tunnel: <REDACTED>
+credentials-file: <REDACTED>
+protocol: http2
+ingress:
+  - hostname: b071a7d2bdda491482bb4045dadf465c-0.lambdaspaces.com
+    service: http://localhost:7000
+  - service: http_status:404
+
+## Tunnel credentials permissions
+644 root:root /etc/cloudflared/config.yml
+644 root:root /etc/cloudflared/jupyter-tunnel.json
+
+## Live connections: cloudflared out to Cloudflare, and into Jupyter
+0 0 127.0.0.1:43066 127.0.0.1:7000 users:(("cloudflared",pid=2153,fd=11)) 
+0 0 10.19.84.205:38450 151.101.128.223:443 users:(("jupyter-lab",pid=2169,fd=9)) 
+0 0 127.0.0.1:7000 127.0.0.1:48446 users:(("jupyter-lab",pid=2169,fd=10)) 
+0 0 127.0.0.1:7000 127.0.0.1:42698 users:(("jupyter-lab",pid=2169,fd=8)) 
+0 0 127.0.0.1:7000 127.0.0.1:43066 users:(("jupyter-lab",pid=2169,fd=11)) 
+0 0 10.19.84.205:41446 198.41.192.67:7844 users:(("cloudflared",pid=2153,fd=7)) 

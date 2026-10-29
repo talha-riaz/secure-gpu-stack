@@ -1,0 +1,24 @@
+active
+-w /etc/passwd -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+-w /etc/sudoers -p wa -k sudoers
+-w /etc/sudoers.d -p wa -k sudoers
+-w /etc/pam.d -p wa -k pam
+-w /etc/ssh/sshd_config -p wa -k sshd_config
+-w /etc/ssh/sshd_config.d -p wa -k sshd_config
+-w /var/lib/secure-gpu-stack/totp -p rwa -k totp_secrets
+-w /etc/ufw -p wa -k firewall
+-w /etc/docker -p wa -k docker_config
+-w /etc/apt/sources.list -p wa -k apt_sources
+-w /etc/apt/sources.list.d -p wa -k apt_sources
+-w /etc/crontab -p wa -k cron
+-w /etc/cron.d -p wa -k cron
+-w /var/spool/cron -p wa -k cron
+-w /etc/systemd/system -p wa -k systemd_units
+-a always,exit -F arch=b64 -S execve -F euid=0 -F auid>=1000 -F auid!=-1 -F key=root_commands
+-a always,exit -F arch=b64 -S init_module,delete_module,finit_module -F key=kernel_modules
+-a always,exit -F arch=b64 -S adjtimex,settimeofday,clock_settime -F auid>=1000 -F auid!=-1 -F key=time_change
+-w /root/.ssh -p wa -k ssh_keys
+-w /home/ubuntu/.ssh -p wa -k ssh_keys

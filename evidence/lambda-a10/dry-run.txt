@@ -1,0 +1,380 @@
+[1;34m[sgs][0m Secure GPU Stack starting 2026-10-29T19:49:12+00:00 (dry-run=1, admin user=ubuntu)
+  [dry-run] env DEBIAN_FRONTEND=noninteractive apt-get update -q
+  [dry-run] env DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends openssh-server libpam-google-authenticator oathtool qrencode chrony
+  [dry-run] systemctl enable --now chrony
+  [dry-run] install -m 0755 /home/ubuntu/secure-gpu-stack/bin/sgs-enroll /usr/local/sbin/sgs-enroll
+[1;34m[ssh-mfa][0m would enroll ubuntu (QR code + code confirmation)
+[1;34m[ssh-mfa][0m would write /etc/ssh/sshd_config.d/00-secure-gpu-stack.conf
+--- /dev/null	2026-10-29 19:38:17.588000000 +0000
++++ /tmp/tmp.qIoGVNmQQe	2026-10-29 19:49:12.578888299 +0000
+@@ -0,0 +1,42 @@
++# Managed by secure-gpu-stack. Local edits will be overwritten.
++
++# --- Authentication: key first, then authenticator code ---
++AuthenticationMethods publickey,keyboard-interactive
++PubkeyAuthentication yes
++KbdInteractiveAuthentication yes
++UsePAM yes
++PasswordAuthentication no
++PermitEmptyPasswords no
++PermitRootLogin no
++HostbasedAuthentication no
++MaxAuthTries 3
++LoginGraceTime 30
++# At most 3 unauthenticated connections per source IP at a time: blunts the DHEat
++# key-exchange CPU flood (CVE-2002-20001), which fail2ban can't see (no failed login).
++PerSourceMaxStartups 3
++
++# One session per connection, so client-side multiplexing (ControlMaster)
++# can't turn a single code into many shells. Set SGS_SSH_MAX_SESSIONS to relax.
++MaxSessions 1
++
++# --- Reduce what an authenticated session can reach ---
++X11Forwarding no
++AllowAgentForwarding no
++# Local forwarding stays on: it's how Jupyter/TensorBoard are reached safely (ssh -L).
++AllowTcpForwarding local
++GatewayPorts no
++PermitTunnel no
++PermitUserEnvironment no
++ClientAliveInterval 300
++ClientAliveCountMax 2
++
++# --- Logging: VERBOSE records which key fingerprint logged in ---
++LogLevel VERBOSE
++
++# --- Cryptography (ssh-audit hardening guide for Ubuntu 22.04/24.04) ---
++HostKey /etc/ssh/ssh_host_ed25519_key
+  ... (5 more diff lines)
+[1;34m[ssh-mfa][0m would write /etc/pam.d/sshd
+--- /etc/pam.d/sshd	2025-04-11 12:05:47.000000000 +0000
++++ /tmp/tmp.Oyi6A2SZ1E	2026-10-29 19:49:12.584888317 +0000
+@@ -1,7 +1,12 @@
+ # PAM configuration for the Secure Shell service
+ 
+ # Standard Un*x authentication.
+-@include common-auth
++# >>> secure-gpu-stack >>>
++# Password step removed: factor 1 is the SSH key (sshd AuthenticationMethods),
++# factor 2 is the TOTP code below. No `nullok`: users without a secret are refused.
++#@include common-auth
++auth required pam_google_authenticator.so secret=/var/lib/secure-gpu-stack/totp/${USER} user=root
++# <<< secure-gpu-stack <<<
+ 
+ # Disallow non-root logins when /etc/nologin exists.
+ account    required     pam_nologin.so
+[1;34m[ssh-mfa][0m would write /etc/ssh/moduli
+--- /etc/ssh/moduli	2025-04-11 12:05:47.000000000 +0000
++++ /tmp/tmp.kG4ll3NY3g	2026-10-29 19:49:12.590888335 +0000
+@@ -1,68 +1,4 @@
+ # Time Type Tests Tries Size Generator Modulus
+-20210524220022 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220025 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220034 2 6 100 2047 5 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220041 2 6 100 2047 5 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220046 2 6 100 2047 5 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220054 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220056 2 6 100 2047 5 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220118 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220122 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220127 2 6 100 2047 5 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220132 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220137 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220154 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220159 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220217 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220251 2 6 100 2047 5 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220256 2 6 100 2047 5 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220301 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220302 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220304 2 6 100 2047 5 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220310 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220313 2 6 100 2047 5 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220316 2 6 100 2047 5 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220323 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220330 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220332 2 6 100 2047 5 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220333 2 6 100 2047 5 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220335 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220337 2 6 100 2047 2 C117F4B631CA032FD2F00AC0D9A5473D8E56DA246FC44FD594BF5657D399E453728341CC920EE9127729637683D268CA3B62F5CB61C7D4F08D3F202D67DBBBD88
+-20210524220355 2 6 100 2047 2 CDA33E2E7179C731632DFF6272815DAAC78E971B46095FA70FD7153B8FEC3061C37064D6D6961EA44D04D20222E7071AF123319EE4B70C6C6C7F5EC5BF6F4556A
+-20210524220404 2 6 100 2047 5 CDA33E2E7179C731632DFF6272815DAAC78E971B46095FA70FD7153B8FEC3061C37064D6D6961EA44D04D20222E7071AF123319EE4B70C6C6C7F5EC5BF6F4556A
+-20210524220412 2 6 100 2047 2 CDA33E2E7179C731632DFF6272815DAAC78E971B46095FA70FD7153B8FEC3061C37064D6D6961EA44D04D20222E7071AF123319EE4B70C6C6C7F5EC5BF6F4556A
+-20210524220414 2 6 100 2047 2 CDA33E2E7179C731632DFF6272815DAAC78E971B46095FA70FD7153B8FEC3061C37064D6D6961EA44D04D20222E7071AF123319EE4B70C6C6C7F5EC5BF6F4556A
+-20210524220420 2 6 100 2047 2 CDA33E2E7179C731632DFF6272815DAAC78E971B46095FA70FD7153B8FEC3061C37064D6D6961EA44D04D20222E7071AF123319EE4B70C6C6C7F5EC5BF6F4556A
+-20210524220424 2 6 100 2047 2 CDA33E2E7179C731632DFF6272815DAAC78E971B46095FA70FD7153B8FEC3061C37064D6D6961EA44D04D20222E7071AF123319EE4B70C6C6C7F5EC5BF6F4556A
+-20210524220425 2 6 100 2047 5 CDA33E2E7179C731632DFF6272815DAAC78E971B46095FA70FD7153B8FEC3061C37064D6D6961EA44D04D20222E7071AF123319EE4B70C6C6C7F5EC5BF6F4556A
+  ... (31 more diff lines)
+  [dry-run] env DEBIAN_FRONTEND=noninteractive apt-get update -q
+  [dry-run] env DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends ufw fail2ban python3-systemd
+[1;34m[firewall][0m would write /etc/docker/daemon.json
+--- /dev/null	2026-10-29 19:38:17.588000000 +0000
++++ /tmp/tmp.sQVXruNPGN	2026-10-29 19:49:12.622888430 +0000
+@@ -0,0 +1,3 @@
++{
++  "ip": "127.0.0.1"
++}
+[1;34m[firewall][0m would write /etc/ufw/after.rules
+--- /etc/ufw/after.rules	2023-07-17 13:55:25.000000000 +0000
++++ /tmp/tmp.CZAFKZ7mtD	2026-10-29 19:49:12.627888445 +0000
+@@ -28,3 +28,18 @@
+ 
+ # don't delete the 'COMMIT' line or these rules won't be processed
+ COMMIT
++# >>> secure-gpu-stack >>>
++# Docker routes published ports through FORWARD, where its own rules run before
++# ufw, so ufw alone does not protect containers. DOCKER-USER runs first: drop NEW
++# connections from outside to containers. Replies, traffic the containers start,
++# and connections from this host itself are unaffected.
++*filter
++:DOCKER-USER - [0:0]
++-A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN
++-A DOCKER-USER -i docker0 -j RETURN
++-A DOCKER-USER -i br-+ -j RETURN
++-A DOCKER-USER -m conntrack --ctstate NEW -m limit --limit 3/min -j LOG --log-prefix "[SGS DOCKER BLOCK] "
++-A DOCKER-USER -m conntrack --ctstate NEW -j DROP
++-A DOCKER-USER -j RETURN
++COMMIT
++# <<< secure-gpu-stack <<<
+[1;34m[firewall][0m would write /etc/ufw/after6.rules
+--- /etc/ufw/after6.rules	2023-07-17 13:55:25.000000000 +0000
++++ /tmp/tmp.ahXSrhpYhg	2026-10-29 19:49:12.633888463 +0000
+@@ -25,3 +25,18 @@
+ 
+ # don't delete the 'COMMIT' line or these rules won't be processed
+ COMMIT
++# >>> secure-gpu-stack >>>
++# Docker routes published ports through FORWARD, where its own rules run before
++# ufw, so ufw alone does not protect containers. DOCKER-USER runs first: drop NEW
++# connections from outside to containers. Replies, traffic the containers start,
++# and connections from this host itself are unaffected.
++*filter
++:DOCKER-USER - [0:0]
++-A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN
++-A DOCKER-USER -i docker0 -j RETURN
++-A DOCKER-USER -i br-+ -j RETURN
++-A DOCKER-USER -m conntrack --ctstate NEW -m limit --limit 3/min -j LOG --log-prefix "[SGS DOCKER BLOCK] "
++-A DOCKER-USER -m conntrack --ctstate NEW -j DROP
++-A DOCKER-USER -j RETURN
++COMMIT
++# <<< secure-gpu-stack <<<
+  [dry-run] ufw default deny incoming
+  [dry-run] ufw default allow outgoing
+  [dry-run] ufw allow 22/tcp comment SSH\ \(key\ +\ authenticator\ code\)
+  [dry-run] ufw logging low
+  [dry-run] ufw --force enable
+  [dry-run] ufw reload
+[1;34m[firewall][0m would write /etc/fail2ban/jail.d/secure-gpu-stack.local
+--- /dev/null	2026-10-29 19:38:17.588000000 +0000
++++ /tmp/tmp.9UCx5afz0m	2026-10-29 19:49:12.646888502 +0000
+@@ -0,0 +1,18 @@
++# Managed by secure-gpu-stack. Local edits will be overwritten.
++[DEFAULT]
++# Bans show up in 'ufw status' and are enforced before sshd sees the connection.
++banaction = ufw
++backend = systemd
++ignoreip = 127.0.0.1/8 ::1 
++
++[sshd]
++enabled = true
++# aggressive: also counts failed authenticator codes and connections that give up
++# after a rejected key, not only failed passwords.
++mode = aggressive
++maxretry = 5
++findtime = 10m
++bantime = 1h
++# Repeat offenders get longer bans (1h, 2h, 4h, ... up to a week).
++bantime.increment = true
++bantime.maxtime = 1w
+  [dry-run] systemctl enable fail2ban
+  [dry-run] systemctl restart fail2ban
+[1;34m[kernel][0m would write /etc/sysctl.d/60-secure-gpu-stack.conf
+--- /dev/null	2026-10-29 19:38:17.588000000 +0000
++++ /tmp/tmp.T7BXY8GnDG	2026-10-29 19:49:12.654888526 +0000
+@@ -0,0 +1,38 @@
++# Managed by secure-gpu-stack. Local edits will be overwritten.
++
++# Kernel information and attack surface
++kernel.kptr_restrict = 2
++kernel.dmesg_restrict = 1
++kernel.unprivileged_bpf_disabled = 1
++net.core.bpf_jit_harden = 2
++# One-way until reboot: no loading a different kernel into the running one.
++kernel.kexec_load_disabled = 1
++kernel.yama.ptrace_scope = 1
++
++# Filesystem tricks (links and FIFOs in world-writable directories) and secret-leaking dumps
++fs.protected_hardlinks = 1
++fs.protected_symlinks = 1
++fs.protected_fifos = 2
++fs.protected_regular = 2
++fs.suid_dumpable = 0
++
++# Network: drop spoofed and redirected packets; IP forwarding is left on for Docker
++net.ipv4.conf.all.rp_filter = 2
++net.ipv4.conf.default.rp_filter = 2
++net.ipv4.conf.all.accept_redirects = 0
++net.ipv4.conf.default.accept_redirects = 0
++net.ipv4.conf.all.secure_redirects = 0
++net.ipv4.conf.default.secure_redirects = 0
++net.ipv6.conf.all.accept_redirects = 0
++net.ipv6.conf.default.accept_redirects = 0
++net.ipv4.conf.all.send_redirects = 0
++net.ipv4.conf.default.send_redirects = 0
++net.ipv4.conf.all.accept_source_route = 0
++net.ipv4.conf.default.accept_source_route = 0
++net.ipv6.conf.all.accept_source_route = 0
++net.ipv6.conf.default.accept_source_route = 0
++net.ipv4.conf.all.log_martians = 1
++net.ipv4.conf.default.log_martians = 1
++net.ipv4.tcp_syncookies = 1
++net.ipv4.icmp_echo_ignore_broadcasts = 1
+  ... (1 more diff lines)
+  [dry-run] sysctl -q -e -p /etc/sysctl.d/60-secure-gpu-stack.conf
+[1;32m[kernel] ✓[0m AppArmor enabled
+  [dry-run] env DEBIAN_FRONTEND=noninteractive apt-get update -q
+  [dry-run] env DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends auditd
+[1;34m[audit-logging][0m would write /etc/audit/rules.d/60-secure-gpu-stack.rules
+--- /dev/null	2026-10-29 19:38:17.588000000 +0000
++++ /tmp/tmp.A9Pin4b6XZ	2026-10-29 19:49:12.662888550 +0000
+@@ -0,0 +1,38 @@
++## Managed by secure-gpu-stack. Search with: sudo ausearch -i -k <key>
++
++## Accounts, privileges and authentication
++-w /etc/passwd -p wa -k identity
++-w /etc/shadow -p wa -k identity
++-w /etc/group -p wa -k identity
++-w /etc/gshadow -p wa -k identity
++-w /etc/sudoers -p wa -k sudoers
++-w /etc/sudoers.d/ -p wa -k sudoers
++-w /etc/pam.d/ -p wa -k pam
++-w /etc/ssh/sshd_config -p wa -k sshd_config
++-w /etc/ssh/sshd_config.d/ -p wa -k sshd_config
++
++## MFA secrets: any access at all, reads included
++-w /var/lib/secure-gpu-stack/totp/ -p rwa -k totp_secrets
++
++## Network exposure and software sources
++-w /etc/ufw/ -p wa -k firewall
++-w /etc/docker/ -p wa -k docker_config
++-w /etc/apt/sources.list -p wa -k apt_sources
++-w /etc/apt/sources.list.d/ -p wa -k apt_sources
++
++## Persistence: scheduled jobs and services
++-w /etc/crontab -p wa -k cron
++-w /etc/cron.d/ -p wa -k cron
++-w /var/spool/cron/ -p wa -k cron
++-w /etc/systemd/system/ -p wa -k systemd_units
++
++## Root commands run by a logged-in person (auid = who logged in, kept across sudo/su)
++-a always,exit -F arch=b64 -S execve -F euid=0 -F auid>=1000 -F auid!=unset -k root_commands
++
++## Kernel modules (rootkits) and clock changes made by people (TOTP and log timelines rely on time)
++-a always,exit -F arch=b64 -S init_module,finit_module,delete_module -k kernel_modules
++-a always,exit -F arch=b64 -S adjtimex,settimeofday,clock_settime -F auid>=1000 -F auid!=unset -k time_change
++
++## SSH keys: adding one is the most common way an intruder keeps access
++-w /root/.ssh/ -p wa -k ssh_keys
+  ... (1 more diff lines)
+  [dry-run] systemctl enable --now auditd
+  [dry-run] augenrules --load
+  [dry-run] env DEBIAN_FRONTEND=noninteractive apt-get update -q
+  [dry-run] env DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends unattended-upgrades
+[1;34m[updates][0m would write /etc/apt/apt.conf.d/52secure-gpu-stack-updates
+--- /dev/null	2026-10-29 19:38:17.588000000 +0000
++++ /tmp/tmp.1mkVl0Bjxp	2026-10-29 19:49:12.671888576 +0000
+@@ -0,0 +1,31 @@
++// Managed by secure-gpu-stack. Local edits will be overwritten.
++// Daily: refresh package lists and install security updates.
++APT::Periodic::Update-Package-Lists "1";
++APT::Periodic::Unattended-Upgrade "1";
++APT::Periodic::AutocleanInterval "7";
++// Never reboot by itself: that would kill running training jobs.
++Unattended-Upgrade::Automatic-Reboot "false";
++// Kernel + NVIDIA driver + CUDA move together, in a planned window with a reboot.
++Unattended-Upgrade::Package-Blacklist {
++    "linux-image-";
++    "linux-headers-";
++    "linux-modules-";
++    "linux-tools-";
++    "linux-objects-nvidia-";
++    "linux-signatures-nvidia-";
++    "linux-nvidia";
++    "linux-generic";
++    "linux-virtual";
++    "linux-aws";
++    "linux-gcp";
++    "nvidia-";
++    "libnvidia-";
++    "cuda";
++    "libcuda";
++    "libcudnn";
++    "libnccl";
++    "libcuinj";
++    "lambda-stack";
++    "libcu(blas|fft|rand|solver|sparse|pti|tensor|file)";
++    "libnv(rtc|jitlink|toolsext|infer|jpeg|blas|vm|sdm)";
++};
+  [dry-run] systemctl enable --now apt-daily.timer apt-daily-upgrade.timer
+[1;34m[updates][0m installing pending security updates (kernel, NVIDIA and CUDA held back)
+  [dry-run] env NEEDRESTART_MODE=l DEBIAN_FRONTEND=noninteractive unattended-upgrade
+  [dry-run] systemctl disable --now lambda-jupyter.service
+  [dry-run] mkdir -p /var/lib/secure-gpu-stack/backups/etc/systemd/system
+  [dry-run] cp -a /etc/systemd/system/lambda-jupyter.service /var/lib/secure-gpu-stack/backups/etc/systemd/system/lambda-jupyter.service.20261029-194912
+  [dry-run] rm -f /etc/systemd/system/lambda-jupyter.service
+  [dry-run] systemctl daemon-reload
+  [dry-run] systemctl mask lambda-jupyter.service
+[1;32m[gpu] ✓[0m stopped and masked lambda-jupyter.service (browser terminal that bypassed SSH MFA)
+  [dry-run] find /etc/cloudflared -maxdepth 1 -name \*.json -exec chmod 0600 \{\} +
+[1;32m[gpu] ✓[0m tunnel credentials in /etc/cloudflared readable by root only
+[1;34m[gpu][0m cloudflared-update.service publishes: http://localhost:7000
+  [dry-run] systemctl disable --now cloudflared-update.service
+  [dry-run] mkdir -p /var/lib/secure-gpu-stack/backups/etc/systemd/system
+  [dry-run] cp -a /etc/systemd/system/cloudflared-update.service /var/lib/secure-gpu-stack/backups/etc/systemd/system/cloudflared-update.service.20261029-194912
+  [dry-run] rm -f /etc/systemd/system/cloudflared-update.service
+  [dry-run] systemctl daemon-reload
+  [dry-run] systemctl mask cloudflared-update.service
+[1;32m[gpu] ✓[0m stopped and masked cloudflared-update.service (outbound tunnel to the browser IDE, invisible to inbound firewalls)
+[1;34m[gpu][0m cloudflared.service publishes: http://localhost:7000
+  [dry-run] systemctl disable --now cloudflared.service
+  [dry-run] mkdir -p /var/lib/secure-gpu-stack/backups/etc/systemd/system
+  [dry-run] cp -a /etc/systemd/system/cloudflared.service /var/lib/secure-gpu-stack/backups/etc/systemd/system/cloudflared.service.20261029-194912
+  [dry-run] rm -f /etc/systemd/system/cloudflared.service
+  [dry-run] systemctl daemon-reload
+  [dry-run] systemctl mask cloudflared.service
+[1;32m[gpu] ✓[0m stopped and masked cloudflared.service (outbound tunnel to the browser IDE, invisible to inbound firewalls)
+[1;33m[gpu] ![0m IDE process outside systemd still running: pid 2169 /home/ubuntu/.local/pipx/venvs/jupyter-core/bin/python /home/ubuntu/.local/pipx/
+[1;34m[gpu][0m would write /etc/modprobe.d/secure-gpu-stack-nvidia.conf
+--- /dev/null	2026-10-29 19:38:17.588000000 +0000
++++ /tmp/tmp.tZUoUvl0g3	2026-10-29 19:49:12.778888895 +0000
+@@ -0,0 +1,2 @@
++# Managed by secure-gpu-stack. GPU performance counters for admins only (CVE-2018-6260).
++options nvidia NVreg_RestrictProfilingToAdminUsers=1
+[1;32m[gpu] ✓[0m GPU profiling restricted to admins (already active; now pinned in /etc/modprobe.d/secure-gpu-stack-nvidia.conf)
+[1;32m[gpu] ✓[0m NVIDIA Container Toolkit 1.18.1-0lambda0.22.04.1 (>= 1.17.8, container-escape fixes included)
+[1;34m[supply-chain][0m would write /etc/profile.d/secure-gpu-stack-ml.sh
+--- /dev/null	2026-10-29 19:38:17.588000000 +0000
++++ /tmp/tmp.q3zOkubtRE	2026-10-29 19:49:12.801888964 +0000
+@@ -0,0 +1,8 @@
++# Managed by secure-gpu-stack: safer defaults for loading ML models.
++# torch.load accepts only tensors and plain data, never pickled code, even if a script
++# passes weights_only=False. For a checkpoint you trust:
++#   TORCH_FORCE_WEIGHTS_ONLY_LOAD=0 python ...
++# Scan downloaded models first: sgs-scan-model <file-or-dir>
++export TORCH_FORCE_WEIGHTS_ONLY_LOAD=1
++# Don't send usage telemetry to Hugging Face.
++export HF_HUB_DISABLE_TELEMETRY=1
+[1;34m[supply-chain][0m would download picklescan and verify SHA-256 6e156d130326da09ca6d195b0f38fdb81b90cbd1ac2ec69d16694e7e5062f8e7
+[1;34m[supply-chain][0m would write /usr/local/bin/sgs-scan-model
+--- /dev/null	2026-10-29 19:38:17.588000000 +0000
++++ /tmp/tmp.IBuVn9DTSC	2026-10-29 19:49:12.806888979 +0000
+@@ -0,0 +1,7 @@
++#!/bin/sh
++# sgs-scan-model: scan model files for pickled code before loading them (secure-gpu-stack).
++#   sgs-scan-model ./checkpoint.pt      sgs-scan-model ~/models/
++#   sgs-scan-model --huggingface org/model   (any other picklescan option is passed through)
++if [ $# -eq 0 ]; then echo "usage: sgs-scan-model PATH | picklescan options" >&2; exit 2; fi
++case "$1" in -*) ;; *) set -- --path "$@" ;; esac
++exec python3 -I -c 'import sys; sys.path.insert(0, "/opt/secure-gpu-stack-tools/picklescan-1.0.4-py3-none-any.whl"); from picklescan.cli import main; sys.exit(
+[1;32m[supply-chain] ✓[0m every apt source is signature-verified
+[1;34m[sgs][0m done. Run ./audit/run_audit.sh to measure the result.

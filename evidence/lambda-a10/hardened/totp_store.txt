@@ -1,0 +1,2 @@
+700 root:root /var/lib/secure-gpu-stack/totp
+400 root:root /var/lib/secure-gpu-stack/totp/ubuntu

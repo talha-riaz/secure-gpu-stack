@@ -1,0 +1,7 @@
+2026-10-29T20:27:15+0000 132-145-167-169 sshd[57798]: Partial publickey for ubuntu from 198.51.100.7 port 54377 ssh2: ED25519
+2026-10-29T20:27:22+0000 132-145-167-169 sshd[57798]: Accepted keyboard-interactive/pam for ubuntu from 198.51.100.7 port 54377 ssh2
+2026-10-29T20:30:13+0000 132-145-167-169 sshd[57864]: Partial publickey for ubuntu from 198.51.100.7 port 54392 ssh2: ED25519
+2026-10-29T20:30:19+0000 132-145-167-169 sshd[57864]: Accepted keyboard-interactive/pam for ubuntu from 198.51.100.7 port 54392 ssh2
+2026-10-29T20:32:03+0000 132-145-167-169 sshd[57929]: Partial publickey for ubuntu from 198.51.100.7 port 54403 ssh2: ED25519
+2026-10-29T20:32:42+0000 132-145-167-169 sshd[57935]: Partial publickey for ubuntu from 198.51.100.7 port 54405 ssh2: ED25519
+2026-10-29T20:32:50+0000 132-145-167-169 sshd[57935]: Accepted keyboard-interactive/pam for ubuntu from 198.51.100.7 port 54405 ssh2

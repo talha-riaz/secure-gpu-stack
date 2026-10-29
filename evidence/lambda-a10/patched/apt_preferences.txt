@@ -1,0 +1,10 @@
+=== /etc/apt/preferences.d/lambda-repository
+Package: *
+Pin: origin archive.lambdalabs.com
+Pin-Priority: 1001
+=== /etc/apt/preferences.d/secure-gpu-stack-container-toolkit
+# Managed by secure-gpu-stack. Lambda's repo is pinned at 1001; match it for NVIDIA's
+# own repo so apt never downgrades the container toolkit (container-escape fixes).
+Package: nvidia-container-toolkit nvidia-container-toolkit-base libnvidia-container-tools libnvidia-container1
+Pin: origin nvidia.github.io
+Pin-Priority: 1001

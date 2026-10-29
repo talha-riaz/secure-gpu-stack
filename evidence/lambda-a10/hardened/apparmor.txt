@@ -1,0 +1,86 @@
+apparmor module is loaded.
+41 profiles are loaded.
+34 profiles are in enforce mode.
+   /snap/snapd/25935/usr/lib/snapd/snap-confine
+   /snap/snapd/25935/usr/lib/snapd/snap-confine//mount-namespace-capture-helper
+   /snap/snapd/28254/usr/lib/snapd/snap-confine
+   /usr/bin/man
+   /usr/lib/NetworkManager/nm-dhcp-client.action
+   /usr/lib/NetworkManager/nm-dhcp-helper
+   /usr/lib/connman/scripts/dhclient-script
+   /usr/lib/snapd/snap-confine
+   /usr/lib/snapd/snap-confine//mount-namespace-capture-helper
+   /usr/sbin/chronyd
+   /{,usr/}sbin/dhclient
+   docker-default
+   lsb_release
+   man_filter
+   man_groff
+   nvidia_modprobe
+   nvidia_modprobe//kmod
+   snap-update-ns.aws-cli
+   snap-update-ns.google-cloud-sdk
+   snap-update-ns.lxd
+   snap.lxd.activate
+   snap.lxd.benchmark
+   snap.lxd.buginfo
+   snap.lxd.check-kernel
+   snap.lxd.daemon
+   snap.lxd.hook.configure
+   snap.lxd.hook.install
+   snap.lxd.hook.remove
+   snap.lxd.lxc
+   snap.lxd.lxc-to-lxd
+   snap.lxd.lxd
+   snap.lxd.migrate
+   snap.lxd.user-daemon
+   tcpdump
+7 profiles are in complain mode.
+   snap.aws-cli.aws
+   snap.google-cloud-sdk.anthoscli
+   snap.google-cloud-sdk.bq
+   snap.google-cloud-sdk.docker-credential-gcloud
+   snap.google-cloud-sdk.gcloud
+   snap.google-cloud-sdk.gsutil
+   snap.google-cloud-sdk.kubectl
+0 profiles are in kill mode.
+0 profiles are in unconfined mode.
+33 processes have profiles defined.
+33 processes are in enforce mode.
+   /usr/sbin/chronyd (52298) 
+   /usr/sbin/chronyd (52299) 
+   /usr/sbin/nginx (179585) docker-default
+   /usr/sbin/nginx (179717) docker-default
+   /usr/sbin/nginx (179718) docker-default
+   /usr/sbin/nginx (179719) docker-default
+   /usr/sbin/nginx (179720) docker-default
+   /usr/sbin/nginx (179721) docker-default
+   /usr/sbin/nginx (179722) docker-default
+   /usr/sbin/nginx (179723) docker-default
+   /usr/sbin/nginx (179724) docker-default
+   /usr/sbin/nginx (179725) docker-default
+   /usr/sbin/nginx (179726) docker-default
+   /usr/sbin/nginx (179727) docker-default
+   /usr/sbin/nginx (179728) docker-default
+   /usr/sbin/nginx (179729) docker-default
+   /usr/sbin/nginx (179730) docker-default
+   /usr/sbin/nginx (179731) docker-default
+   /usr/sbin/nginx (179732) docker-default
+   /usr/sbin/nginx (179733) docker-default
+   /usr/sbin/nginx (179734) docker-default
+   /usr/sbin/nginx (179735) docker-default
+   /usr/sbin/nginx (179736) docker-default
+   /usr/sbin/nginx (179737) docker-default
+   /usr/sbin/nginx (179738) docker-default
+   /usr/sbin/nginx (179739) docker-default
+   /usr/sbin/nginx (179740) docker-default
+   /usr/sbin/nginx (179741) docker-default
+   /usr/sbin/nginx (179742) docker-default
+   /usr/sbin/nginx (179743) docker-default
+   /usr/sbin/nginx (179744) docker-default
+   /usr/sbin/nginx (179745) docker-default
+   /usr/sbin/nginx (179746) docker-default
+0 processes are in complain mode.
+0 processes are unconfined but have a profile defined.
+0 processes are in mixed mode.
+0 processes are in kill mode.

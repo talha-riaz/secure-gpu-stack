@@ -1,0 +1,4 @@
+=== /etc/apt/preferences.d/lambda-repository
+Package: *
+Pin: origin archive.lambdalabs.com
+Pin-Priority: 1001

@@ -1,0 +1,72 @@
+{
+  "host": "132.145.167.169",
+  "scanned_at": "2026-10-29T15:47:08-04:00",
+  "ports": {
+    "22": {
+      "state": "open",
+      "service": "SSH"
+    },
+    "80": {
+      "state": "closed",
+      "service": "HTTP"
+    },
+    "111": {
+      "state": "open",
+      "service": "rpcbind (NFS portmapper)"
+    },
+    "443": {
+      "state": "closed",
+      "service": "HTTPS"
+    },
+    "3000": {
+      "state": "closed",
+      "service": "Grafana / dev servers"
+    },
+    "5000": {
+      "state": "closed",
+      "service": "MLflow / Flask"
+    },
+    "6006": {
+      "state": "closed",
+      "service": "TensorBoard"
+    },
+    "7860": {
+      "state": "closed",
+      "service": "Gradio"
+    },
+    "8000": {
+      "state": "open",
+      "service": "vLLM / FastAPI / http.server"
+    },
+    "8080": {
+      "state": "open",
+      "service": "HTTP alt / containers"
+    },
+    "8265": {
+      "state": "closed",
+      "service": "Ray dashboard"
+    },
+    "8501": {
+      "state": "closed",
+      "service": "Streamlit"
+    },
+    "8787": {
+      "state": "closed",
+      "service": "Dask dashboard"
+    },
+    "8888": {
+      "state": "closed",
+      "service": "Jupyter"
+    },
+    "9090": {
+      "state": "closed",
+      "service": "Prometheus"
+    },
+    "11434": {
+      "state": "closed",
+      "service": "Ollama"
+    }
+  },
+  "ssh_auth_methods": "publickey",
+  "ssh_probe_output": "ubuntu@132.145.167.169: Permission denied (publickey)."
+}

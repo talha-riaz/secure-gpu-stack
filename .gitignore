@@ -1,6 +1,8 @@
 # Audit output: scan results from real hosts (may include hostnames, IPs, package lists)
 audit/results/
 *.log
+# ...except the curated evidence, which is meant to be read
+!evidence/**/*.log
 
 # Never commit keys or TOTP material
 *.pem

@@ -1,0 +1,7 @@
+root        2153 /usr/bin/cloudflared --no-autoupdate --config /etc/cloudflared/config.yml tunnel run
+ubuntu      2169 /home/ubuntu/.local/pipx/venvs/jupyter-core/bin/python /home/ubuntu/.local/pipx/venvs/jupyter-core/bin/jupyter-lab --config /home/ubuntu/.jupyter/jupyter_config.py
+cloudflared-update.service                                                    static          -
+cloudflared.service                                                           enabled         enabled
+lambda-first-boot.service                                                     enabled         enabled
+lambda-jupyter.service                                                        enabled         enabled
+cloudflared-update.timer                                                      disabled        enabled

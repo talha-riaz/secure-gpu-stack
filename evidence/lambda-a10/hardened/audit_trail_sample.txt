@@ -1,0 +1,29 @@
+# auditd trail sample from the hardened instance, 2026-10-29T20:48:08Z
+# per key: number of events and the latest one (auid = the person who logged in, kept across sudo)
+
+## sshd_config: 2 event(s)
+auid=ubuntu uid=root uid=root uid=root uid=root comm=auditctl exe=/usr/sbin/auditctl key=(null) 
+
+## pam: 100 event(s)
+auid=ubuntu uid=root uid=root uid=root uid=root comm=pam-auth-update exe=/usr/bin/perl key=pam 
+
+## sudoers: 13 event(s)
+auid=ubuntu uid=root uid=root uid=root uid=root comm=chmod exe=/usr/bin/chmod key=sudoers 
+
+## totp_secrets: 29 event(s)
+auid=unset uid=root uid=root uid=root uid=root comm=sshd exe=/usr/sbin/sshd key=totp_secrets 
+
+## ssh_keys: 2 event(s)
+auid=ubuntu uid=root uid=root uid=root uid=root comm=auditctl exe=/usr/sbin/auditctl key=(null) 
+
+## systemd_units: 4 event(s)
+auid=ubuntu uid=root uid=root uid=root uid=root comm=rm exe=/usr/bin/rm key=systemd_units 
+
+## firewall: 51 event(s)
+auid=unset uid=root uid=root uid=root uid=root comm=ufw exe=/usr/bin/python3.10 key=firewall 
+
+## docker_config: 1 event(s)
+auid=ubuntu uid=root uid=root uid=root uid=root comm=auditctl exe=/usr/sbin/auditctl key=(null) 
+
+## root_commands: 9193 event(s)
+auid=ubuntu uid=root uid=root uid=root uid=root comm=systemctl exe=/usr/bin/systemctl key=root_commands 

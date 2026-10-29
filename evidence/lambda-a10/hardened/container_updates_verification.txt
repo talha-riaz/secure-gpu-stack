@@ -1,0 +1,16 @@
+# Verification after the container-repo updates, 2026-10-29T20:59:29Z
+## versions
+docker , containerd 2.4.2-3~ubuntu.22.04~jammy, toolkit 1.20.1-1, cloudflared 2026.10.6
+
+## 1. docker run -p 9999:80 (no IP given) binds to:
+80/tcp -> 127.0.0.1:9999
+
+## 2. GPU inside a container after the toolkit upgrade:
+GPU 0: NVIDIA A10 (UUID: GPU-0c1b8c3d-da3b-e7bb-954c-fae933e781f2)
+
+## 3. Cloud IDE tunnel after the cloudflared upgrade:
+cloudflared.service: masked / inactive
+cloudflared-update.service: masked / inactive
+lambda-jupyter.service: masked / inactive
+cloudflared processes: 0
+600 /etc/cloudflared/jupyter-tunnel.json

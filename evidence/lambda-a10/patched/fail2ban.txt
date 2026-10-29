@@ -1,0 +1,12 @@
+Status
+|- Number of jail:	1
+`- Jail list:	sshd
+Status for the jail: sshd
+|- Filter
+|  |- Currently failed:	6
+|  |- Total failed:	25
+|  `- Journal matches:	_SYSTEMD_UNIT=sshd.service + _COMM=sshd
+`- Actions
+   |- Currently banned:	1
+   |- Total banned:	2
+   `- Banned IP list:	157.245.84.42

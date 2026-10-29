@@ -1,0 +1,2 @@
+Status: Downloaded newer image for ubuntu:22.04
+GPU 0: NVIDIA A10 (UUID: GPU-0c1b8c3d-da3b-e7bb-954c-fae933e781f2)

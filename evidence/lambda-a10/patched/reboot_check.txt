@@ -1,0 +1,56 @@
+# before reboot 2026-10-29T21:17:24+00:00
+kernel: 6.8.0-1046-nvidia
+boot_id: 8c0d8178-ff21-48a2-b382-a95a1160529f
+uptime: up 1 hour, 39 minutes
+containers running: 1
+reboot-required.pkgs:
+linux-image-6.8.0-1064-nvidia
+
+# after reboot 2026-10-29T21:25:48+00:00
+kernel: 6.8.0-1064-nvidia
+boot_id: 378480ba-2fb5-43a1-b75c-0e6916519d84
+uptime: up 5 minutes
+reboot-required: no
+
+## GPU
+NVIDIA A10, 580.105.08, 23028 MiB
+profiling admin-only: 1
+
+## SSH MFA
+maxauthtries 3
+maxsessions 1
+permitrootlogin no
+passwordauthentication no
+kbdinteractiveauthentication yes
+authenticationmethods publickey,keyboard-interactive
+auth required pam_google_authenticator.so secret=... user=root
+
+## Firewall
+Status: active
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW       Anywhere                   # SSH (key + authenticator code)
+22/tcp (v6)                ALLOW       Anywhere (v6)              # SSH (key + authenticator code)
+
+DOCKER-USER drop rules: 1
+fail2ban: active, banned now: 	0
+docker daemon ip: 127.0.0.1
+
+## Browser IDE and tunnel
+lambda-jupyter: masked / inactive
+cloudflared: masked / inactive
+cloudflared-update: masked / inactive
+600 root /etc/cloudflared/jupyter-tunnel.json
+
+## Kernel and audit
+log_martians kptr_restrict unprivileged_bpf: 1 2 1
+auditd: active, rules loaded: 22 (10 on identity, totp_secrets, sshd_config, firewall, docker_config, ssh_keys, root_commands)
+
+## Packages
+azure-cli	2.91.0-1~jammy
+docker-ce	5:29.9.2-1~ubuntu.22.04~jammy
+linux-tools-common	5.15.0-202.212
+nvidia-container-toolkit	1.20.1-1
+
+## Containers

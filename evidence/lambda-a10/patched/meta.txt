@@ -1,0 +1,9 @@
+label=after
+hostname=132-145-167-169
+collected_at=2026-10-29T21:30:56+00:00
+os=Ubuntu 22.04.5 LTS
+kernel=6.8.0-1064-nvidia
+arch=amd64
+gpu=NVIDIA A10
+sgs_installed=yes
+sgs_version=192aba1

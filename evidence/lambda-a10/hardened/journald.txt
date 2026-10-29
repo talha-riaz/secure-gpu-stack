@@ -1,0 +1,1 @@
+drwxr-sr-x+ 3 root systemd-journal 4096 Oct 29 19:38 /var/log/journal

@@ -1,0 +1,2 @@
+inactive
+bash: line 1: auditctl: command not found

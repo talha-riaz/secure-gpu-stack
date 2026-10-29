@@ -1,0 +1,25 @@
+|  |- Currently failed:	3
+|  |- Total failed:	20
+   |- Currently banned:	3
+   |- Total banned:	3
+   `- Banned IP list:	164.30.17.82 198.51.100.7 179.43.153.10
+--- what fail2ban counted:
+2026-10-29 20:19:30,386 fail2ban.filter         [54237]: INFO    [sshd] Found 202.165.25.8 - 2026-10-29 20:19:
+2026-10-29 20:19:40,636 fail2ban.filter         [54237]: INFO    [sshd] Found 179.43.153.10 - 2026-10-29 20:19
+2026-10-29 20:21:57,636 fail2ban.filter         [54237]: INFO    [sshd] Found 179.43.153.10 - 2026-10-29 20:21
+2026-10-29 20:21:57,637 fail2ban.filter         [54237]: INFO    [sshd] Found 179.43.153.10 - 2026-10-29 20:21
+2026-10-29 20:23:27,136 fail2ban.filter         [54237]: INFO    [sshd] Found 179.43.153.10 - 2026-10-29 20:23
+2026-10-29 20:23:27,137 fail2ban.filter         [54237]: INFO    [sshd] Found 179.43.153.10 - 2026-10-29 20:23
+2026-10-29 20:23:27,508 fail2ban.actions        [54237]: NOTICE  [sshd] Ban 179.43.153.10
+2026-10-29 20:24:44,887 fail2ban.filter         [54237]: INFO    [sshd] Found 177.104.140.2 - 2026-10-29 20:24
+--- sshd lines for those attempts:
+error: PAM: Authentication failure for ubuntu from 198.51.100.7
+Failed keyboard-interactive/pam for ubuntu from 198.51.100.7 port 54354 ssh2
+Postponed keyboard-interactive for ubuntu from 198.51.100.7 port 54354 ssh2 [preauth]
+error: PAM: Authentication failure for ubuntu from 198.51.100.7
+Failed keyboard-interactive/pam for ubuntu from 198.51.100.7 port 54354 ssh2
+Postponed keyboard-interactive for ubuntu from 198.51.100.7 port 54354 ssh2 [preauth]
+error: PAM: Authentication failure for ubuntu from 198.51.100.7
+Failed keyboard-interactive/pam for ubuntu from 198.51.100.7 port 54354 ssh2
+error: maximum authentication attempts exceeded for ubuntu from 198.51.100.7 port 54354 ssh2 [preauth]
+Disconnecting authenticating user ubuntu 198.51.100.7 port 54354: Too many authentication failures [preauth]

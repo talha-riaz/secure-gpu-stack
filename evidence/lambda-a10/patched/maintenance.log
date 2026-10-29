@@ -1,0 +1,664 @@
+[1;34m[sgs][0m Secure GPU Stack starting 2026-10-29T21:11:51+00:00 (dry-run=0, admin user=ubuntu)
+Hit:1 https://nvidia.github.io/libnvidia-container/stable/deb/amd64  InRelease
+Hit:2 https://download.docker.com/linux/ubuntu jammy InRelease
+Hit:3 http://archive.ubuntu.com/ubuntu jammy InRelease
+Hit:4 https://packages.microsoft.com/repos/azure-cli jammy InRelease
+Hit:5 http://archive.ubuntu.com/ubuntu jammy-updates InRelease
+Hit:6 http://archive.ubuntu.com/ubuntu jammy-backports InRelease
+Ign:7 http://linux.mellanox.com/public/repo/doca/2.9.3/ubuntu22.04/x86_64 ./ InRelease
+Hit:8 http://security.ubuntu.com/ubuntu jammy-security InRelease
+Hit:9 http://archive.lambdalabs.com/ubuntu jammy InRelease
+Hit:10 https://pkg.cloudflare.com/cloudflared jammy InRelease
+Hit:11 http://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu jammy InRelease
+Hit:12 http://linux.mellanox.com/public/repo/doca/2.9.3/ubuntu22.04/x86_64 ./ Release
+Hit:14 https://ppa.launchpadcontent.net/flexiondotorg/nvtop/ubuntu jammy InRelease
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+unattended-upgrades is already the newest version (2.8ubuntu1).
+0 upgraded, 0 newly installed, 0 to remove and 30 not upgraded.
+[1;34m[updates][0m installing pending security updates (kernel, NVIDIA and CUDA held back; can take several minutes)
+Starting unattended upgrades script
+Allowed origins are: o=Ubuntu,a=jammy, o=Ubuntu,a=jammy-security, o=UbuntuESMApps,a=jammy-apps-security, o=UbuntuESM,a=jammy-infra-security, origin=Docker,archive=jammy,label=Docker CE, origin=https://nvidia.github.io/libnvidia-container/stable, origin=cloudflared,codename=jammy
+Initial blacklist: linux-image- linux-headers- linux-modules- linux-tools-(?!common) linux-objects-nvidia- linux-signatures-nvidia- linux-nvidia linux-generic linux-virtual linux-aws linux-gcp nvidia-(?!container) libnvidia-(?!container) cuda libcuda libcudnn libnccl libcuinj lambda-stack libcu(blas|fft|rand|solver|sparse|pti|tensor|file) libnv(rtc|jitlink|toolsext|infer|jpeg|blas|vm|sdm)
+Initial whitelist (not strict): 
+No packages found that can be upgraded unattended and no pending auto-removals
+Package libnvidia-cfg1-580-server is blacklisted.
+Package libnvidia-compute-580-server is blacklisted.
+Package libnvidia-extra-580-server is blacklisted.
+Package linux-headers-nvidia-hwe-22.04 is blacklisted.
+Package linux-image-nvidia-hwe-22.04 is blacklisted.
+Package linux-nvidia-hwe-22.04 is blacklisted.
+Package linux-tools-nvidia-hwe-22.04 is blacklisted.
+Package nvidia-compute-utils-580-server is blacklisted.
+Package nvidia-dkms-580-server-open is blacklisted.
+Package nvidia-fabricmanager-580 is blacklisted.
+Package nvidia-headless-580-server-open is blacklisted.
+Package nvidia-headless-no-dkms-580-server-open is blacklisted.
+Package nvidia-kernel-common-580-server is blacklisted.
+Package nvidia-kernel-source-580-server-open is blacklisted.
+Package nvidia-utils-580-server is blacklisted.
+[1;33m[updates] ![0m SGS_PATCH_ALL=1: upgrading the kernel, NVIDIA driver and CUDA too; reboot afterwards
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Calculating upgrade...
+The following NEW packages will be installed:
+  linux-headers-6.8.0-1064-nvidia linux-image-6.8.0-1064-nvidia
+  linux-modules-6.8.0-1064-nvidia linux-modules-extra-6.8.0-1064-nvidia
+  linux-modules-nvidia-fs-6.8.0-1064-nvidia
+  linux-nvidia-6.8-headers-6.8.0-1064 linux-nvidia-6.8-tools-6.8.0-1064
+  linux-tools-6.8.0-1064-nvidia netplan-generator python3-netplan
+The following packages will be upgraded:
+  azure-cli cloud-init dnsmasq-base iproute2 libgssapi-krb5-2 libjcat1
+  libk5crypto3 libkrb5-3 libkrb5support0 libnetplan0 libnftables1
+  libopeniscsiusr libxmlb2 linux-firmware linux-headers-nvidia-hwe-22.04
+  linux-image-nvidia-hwe-22.04 linux-libc-dev linux-nvidia-hwe-22.04
+  linux-tools-common linux-tools-nvidia-hwe-22.04 lshw nano netplan.io
+  nftables open-iscsi python3-mpmath qemu-guest-agent snapd sosreport tmux
+30 upgraded, 10 newly installed, 0 to remove and 0 not upgraded.
+Need to get 562 MB of archives.
+After this operation, 768 MB of additional disk space will be used.
+Get:1 https://packages.microsoft.com/repos/azure-cli jammy/main amd64 azure-cli amd64 2.91.0-1~jammy [57.5 MB]
+Get:2 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libopeniscsiusr amd64 2.1.5-1ubuntu1.3 [67.5 kB]
+Get:3 http://archive.lambdalabs.com/ubuntu jammy/main amd64 python3-mpmath all 1.3.0-1~lambda1 [403 kB]
+Get:4 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 open-iscsi amd64 2.1.5-1ubuntu1.3 [323 kB]
+Get:5 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 qemu-guest-agent amd64 1:6.2+dfsg-2ubuntu6.31 [252 kB]
+Get:6 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libk5crypto3 amd64 1.19.2-2ubuntu0.10 [86.5 kB]
+Get:7 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libkrb5support0 amd64 1.19.2-2ubuntu0.10 [32.7 kB]
+Get:8 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libkrb5-3 amd64 1.19.2-2ubuntu0.10 [356 kB]
+Get:9 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libgssapi-krb5-2 amd64 1.19.2-2ubuntu0.10 [145 kB]
+Get:10 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 iproute2 amd64 5.15.0-1ubuntu2.2 [1072 kB]
+Get:11 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 netplan.io amd64 0.107.1-3ubuntu0.22.04.5 [56.3 kB]
+Get:12 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 netplan-generator amd64 0.107.1-3ubuntu0.22.04.5 [57.1 kB]
+Get:13 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-netplan amd64 0.107.1-3ubuntu0.22.04.5 [23.1 kB]
+Get:14 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libnetplan0 amd64 0.107.1-3ubuntu0.22.04.5 [117 kB]
+Get:15 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 nftables amd64 1.0.2-1ubuntu3.1 [67.2 kB]
+Get:16 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libnftables1 amd64 1.0.2-1ubuntu3.1 [332 kB]
+Get:17 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 lshw amd64 02.19.git.2021.06.19.996aaad9c7-2ubuntu0.22.04.1 [322 kB]
+Get:18 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 nano amd64 6.2-1ubuntu0.3 [280 kB]
+Get:19 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 dnsmasq-base amd64 2.91-0ubuntu0.22.04.2 [379 kB]
+Get:20 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libjcat1 amd64 0.2.3-1~ubuntu0.22.04.1 [35.9 kB]
+Get:21 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libxmlb2 amd64 0.3.24-1~ubuntu0.22.04.1 [67.9 kB]
+Get:22 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-firmware all 20220329.git681281e4-0ubuntu3.42 [316 MB]
+Get:23 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-nvidia-6.8-headers-6.8.0-1064 all 6.8.0-1064.67~22.04.1 [14.5 MB]
+Get:24 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-headers-6.8.0-1064-nvidia amd64 6.8.0-1064.67~22.04.1 [4546 kB]
+Get:25 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-modules-6.8.0-1064-nvidia amd64 6.8.0-1064.67~22.04.1 [27.2 MB]
+Get:26 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-image-6.8.0-1064-nvidia amd64 6.8.0-1064.67~22.04.1 [14.8 MB]
+Get:27 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-modules-extra-6.8.0-1064-nvidia amd64 6.8.0-1064.67~22.04.1 [79.5 MB]
+Get:28 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-modules-nvidia-fs-6.8.0-1064-nvidia amd64 6.8.0-1064.67~22.04.1 [1052 kB]
+Get:29 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-nvidia-hwe-22.04 amd64 6.8.0-1064.67~22.04.1 [16.8 kB]
+Get:30 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-image-nvidia-hwe-22.04 amd64 6.8.0-1064.67~22.04.1 [16.9 kB]
+Get:31 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-headers-nvidia-hwe-22.04 amd64 6.8.0-1064.67~22.04.1 [16.8 kB]
+Get:32 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-libc-dev amd64 5.15.0-202.212 [1432 kB]
+Get:33 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-tools-common all 5.15.0-202.212 [402 kB]
+Get:34 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-nvidia-6.8-tools-6.8.0-1064 amd64 6.8.0-1064.67~22.04.1 [4990 kB]
+Get:35 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-tools-6.8.0-1064-nvidia amd64 6.8.0-1064.67~22.04.1 [996 kB]
+Get:36 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 linux-tools-nvidia-hwe-22.04 amd64 6.8.0-1064.67~22.04.1 [16.8 kB]
+Get:37 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 snapd amd64 2.77.1+ubuntu22.04.1 [33.2 MB]
+Get:38 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 sosreport amd64 4.11.2-0ubuntu0~22.04.1 [403 kB]
+Get:39 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 tmux amd64 3.2a-4ubuntu0.3 [428 kB]
+Get:40 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 cloud-init all 26.1-0ubuntu1~22.04.1 [590 kB]
+Preconfiguring packages ...
+Fetched 562 MB in 12s (45.6 MB/s)
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 214478 files and directories currently installed.)
+Preparing to unpack .../libopeniscsiusr_2.1.5-1ubuntu1.3_amd64.deb ...
+Unpacking libopeniscsiusr (2.1.5-1ubuntu1.3) over (2.1.5-1ubuntu1.1) ...
+Preparing to unpack .../open-iscsi_2.1.5-1ubuntu1.3_amd64.deb ...
+Unpacking open-iscsi (2.1.5-1ubuntu1.3) over (2.1.5-1ubuntu1.1) ...
+Preparing to unpack .../qemu-guest-agent_1%3a6.2+dfsg-2ubuntu6.31_amd64.deb ...
+Unpacking qemu-guest-agent (1:6.2+dfsg-2ubuntu6.31) over (1:6.2+dfsg-2ubuntu6.30) ...
+Preparing to unpack .../libk5crypto3_1.19.2-2ubuntu0.10_amd64.deb ...
+Unpacking libk5crypto3:amd64 (1.19.2-2ubuntu0.10) over (1.19.2-2ubuntu0.8) ...
+Setting up libk5crypto3:amd64 (1.19.2-2ubuntu0.10) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 214478 files and directories currently installed.)
+Preparing to unpack .../libkrb5support0_1.19.2-2ubuntu0.10_amd64.deb ...
+Unpacking libkrb5support0:amd64 (1.19.2-2ubuntu0.10) over (1.19.2-2ubuntu0.8) ...
+Setting up libkrb5support0:amd64 (1.19.2-2ubuntu0.10) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 214478 files and directories currently installed.)
+Preparing to unpack .../libkrb5-3_1.19.2-2ubuntu0.10_amd64.deb ...
+Unpacking libkrb5-3:amd64 (1.19.2-2ubuntu0.10) over (1.19.2-2ubuntu0.8) ...
+Setting up libkrb5-3:amd64 (1.19.2-2ubuntu0.10) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 214478 files and directories currently installed.)
+Preparing to unpack .../libgssapi-krb5-2_1.19.2-2ubuntu0.10_amd64.deb ...
+Unpacking libgssapi-krb5-2:amd64 (1.19.2-2ubuntu0.10) over (1.19.2-2ubuntu0.8) ...
+Setting up libgssapi-krb5-2:amd64 (1.19.2-2ubuntu0.10) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 214478 files and directories currently installed.)
+Preparing to unpack .../00-iproute2_5.15.0-1ubuntu2.2_amd64.deb ...
+Unpacking iproute2 (5.15.0-1ubuntu2.2) over (5.15.0-1ubuntu2) ...
+Preparing to unpack .../01-netplan.io_0.107.1-3ubuntu0.22.04.5_amd64.deb ...
+Unpacking netplan.io (0.107.1-3ubuntu0.22.04.5) over (0.106.1-7ubuntu0.22.04.4) ...
+dpkg: warning: unable to delete old directory '/etc/netplan': Directory not empty
+Selecting previously unselected package netplan-generator.
+Preparing to unpack .../02-netplan-generator_0.107.1-3ubuntu0.22.04.5_amd64.deb ...
+Unpacking netplan-generator (0.107.1-3ubuntu0.22.04.5) ...
+Selecting previously unselected package python3-netplan.
+Preparing to unpack .../03-python3-netplan_0.107.1-3ubuntu0.22.04.5_amd64.deb ...
+Unpacking python3-netplan (0.107.1-3ubuntu0.22.04.5) ...
+Preparing to unpack .../04-libnetplan0_0.107.1-3ubuntu0.22.04.5_amd64.deb ...
+Unpacking libnetplan0:amd64 (0.107.1-3ubuntu0.22.04.5) over (0.106.1-7ubuntu0.22.04.4) ...
+Preparing to unpack .../05-nftables_1.0.2-1ubuntu3.1_amd64.deb ...
+Unpacking nftables (1.0.2-1ubuntu3.1) over (1.0.2-1ubuntu3) ...
+Preparing to unpack .../06-libnftables1_1.0.2-1ubuntu3.1_amd64.deb ...
+Unpacking libnftables1:amd64 (1.0.2-1ubuntu3.1) over (1.0.2-1ubuntu3) ...
+Preparing to unpack .../07-lshw_02.19.git.2021.06.19.996aaad9c7-2ubuntu0.22.04.1_amd64.deb ...
+Unpacking lshw (02.19.git.2021.06.19.996aaad9c7-2ubuntu0.22.04.1) over (02.19.git.2021.06.19.996aaad9c7-2build1) ...
+Preparing to unpack .../08-nano_6.2-1ubuntu0.3_amd64.deb ...
+Unpacking nano (6.2-1ubuntu0.3) over (6.2-1ubuntu0.2) ...
+Preparing to unpack .../09-dnsmasq-base_2.91-0ubuntu0.22.04.2_amd64.deb ...
+Unpacking dnsmasq-base (2.91-0ubuntu0.22.04.2) over (2.90-0ubuntu0.22.04.4) ...
+Preparing to unpack .../10-libjcat1_0.2.3-1~ubuntu0.22.04.1_amd64.deb ...
+Unpacking libjcat1:amd64 (0.2.3-1~ubuntu0.22.04.1) over (0.1.9-1) ...
+Preparing to unpack .../11-libxmlb2_0.3.24-1~ubuntu0.22.04.1_amd64.deb ...
+Unpacking libxmlb2:amd64 (0.3.24-1~ubuntu0.22.04.1) over (0.3.6-2build1) ...
+Preparing to unpack .../12-linux-firmware_20220329.git681281e4-0ubuntu3.42_all.deb ...
+Unpacking linux-firmware (20220329.git681281e4-0ubuntu3.42) over (20220329.git681281e4-0ubuntu3.41) ...
+Selecting previously unselected package linux-nvidia-6.8-headers-6.8.0-1064.
+Preparing to unpack .../13-linux-nvidia-6.8-headers-6.8.0-1064_6.8.0-1064.67~22.04.1_all.deb ...
+Unpacking linux-nvidia-6.8-headers-6.8.0-1064 (6.8.0-1064.67~22.04.1) ...
+Selecting previously unselected package linux-headers-6.8.0-1064-nvidia.
+Preparing to unpack .../14-linux-headers-6.8.0-1064-nvidia_6.8.0-1064.67~22.04.1_amd64.deb ...
+Unpacking linux-headers-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+Selecting previously unselected package linux-modules-6.8.0-1064-nvidia.
+Preparing to unpack .../15-linux-modules-6.8.0-1064-nvidia_6.8.0-1064.67~22.04.1_amd64.deb ...
+Unpacking linux-modules-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+Selecting previously unselected package linux-image-6.8.0-1064-nvidia.
+Preparing to unpack .../16-linux-image-6.8.0-1064-nvidia_6.8.0-1064.67~22.04.1_amd64.deb ...
+Unpacking linux-image-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+Selecting previously unselected package linux-modules-extra-6.8.0-1064-nvidia.
+Preparing to unpack .../17-linux-modules-extra-6.8.0-1064-nvidia_6.8.0-1064.67~22.04.1_amd64.deb ...
+Unpacking linux-modules-extra-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+Selecting previously unselected package linux-modules-nvidia-fs-6.8.0-1064-nvidia.
+Preparing to unpack .../18-linux-modules-nvidia-fs-6.8.0-1064-nvidia_6.8.0-1064.67~22.04.1_amd64.deb ...
+Unpacking linux-modules-nvidia-fs-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+Preparing to unpack .../19-linux-nvidia-hwe-22.04_6.8.0-1064.67~22.04.1_amd64.deb ...
+Unpacking linux-nvidia-hwe-22.04 (6.8.0-1064.67~22.04.1) over (6.8.0-1046.49~22.04.1) ...
+Preparing to unpack .../20-linux-image-nvidia-hwe-22.04_6.8.0-1064.67~22.04.1_amd64.deb ...
+Unpacking linux-image-nvidia-hwe-22.04 (6.8.0-1064.67~22.04.1) over (6.8.0-1046.49~22.04.1) ...
+Preparing to unpack .../21-linux-headers-nvidia-hwe-22.04_6.8.0-1064.67~22.04.1_amd64.deb ...
+Unpacking linux-headers-nvidia-hwe-22.04 (6.8.0-1064.67~22.04.1) over (6.8.0-1046.49~22.04.1) ...
+Preparing to unpack .../22-linux-libc-dev_5.15.0-202.212_amd64.deb ...
+Unpacking linux-libc-dev:amd64 (5.15.0-202.212) over (5.15.0-198.208) ...
+Preparing to unpack .../23-linux-tools-common_5.15.0-202.212_all.deb ...
+Unpacking linux-tools-common (5.15.0-202.212) over (5.15.0-198.208) ...
+Selecting previously unselected package linux-nvidia-6.8-tools-6.8.0-1064.
+Preparing to unpack .../24-linux-nvidia-6.8-tools-6.8.0-1064_6.8.0-1064.67~22.04.1_amd64.deb ...
+Unpacking linux-nvidia-6.8-tools-6.8.0-1064 (6.8.0-1064.67~22.04.1) ...
+Selecting previously unselected package linux-tools-6.8.0-1064-nvidia.
+Preparing to unpack .../25-linux-tools-6.8.0-1064-nvidia_6.8.0-1064.67~22.04.1_amd64.deb ...
+Unpacking linux-tools-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+Preparing to unpack .../26-linux-tools-nvidia-hwe-22.04_6.8.0-1064.67~22.04.1_amd64.deb ...
+Unpacking linux-tools-nvidia-hwe-22.04 (6.8.0-1064.67~22.04.1) over (6.8.0-1046.49~22.04.1) ...
+Preparing to unpack .../27-python3-mpmath_1.3.0-1~lambda1_all.deb ...
+Unpacking python3-mpmath (1.3.0-1~lambda1) over (1.2.1-2) ...
+Preparing to unpack .../28-snapd_2.77.1+ubuntu22.04.1_amd64.deb ...
+Unpacking snapd (2.77.1+ubuntu22.04.1) over (2.76.3+ubuntu22.04.1) ...
+Preparing to unpack .../29-sosreport_4.11.2-0ubuntu0~22.04.1_amd64.deb ...
+Unpacking sosreport (4.11.2-0ubuntu0~22.04.1) over (4.9.2-0ubuntu0~22.04.1) ...
+Preparing to unpack .../30-tmux_3.2a-4ubuntu0.3_amd64.deb ...
+Unpacking tmux (3.2a-4ubuntu0.3) over (3.2a-4ubuntu0.2) ...
+Preparing to unpack .../31-azure-cli_2.91.0-1~jammy_amd64.deb ...
+Unpacking azure-cli (2.91.0-1~jammy) over (2.83.0-1~jammy) ...
+Preparing to unpack .../32-cloud-init_26.1-0ubuntu1~22.04.1_all.deb ...
+Unpacking cloud-init (26.1-0ubuntu1~22.04.1) over (25.3-0ubuntu1~22.04.1) ...
+Setting up snapd (2.77.1+ubuntu22.04.1) ...
+Installing new version of config file /etc/apparmor.d/usr.lib.snapd.snap-confine.real ...
+snapd.failure.service is a disabled or a static unit not running, not starting it.
+snapd.gpio-chardev-setup.target is a disabled or a static unit not running, not starting it.
+snapd.snap-repair.service is a disabled or a static unit not running, not starting it.
+Setting up linux-nvidia-6.8-headers-6.8.0-1064 (6.8.0-1064.67~22.04.1) ...
+Setting up libnftables1:amd64 (1.0.2-1ubuntu3.1) ...
+Setting up nftables (1.0.2-1ubuntu3.1) ...
+Setting up linux-modules-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+Setting up linux-firmware (20220329.git681281e4-0ubuntu3.42) ...
+update-initramfs: Generating /boot/initrd.img-6.8.0-1046-nvidia
+Setting up iproute2 (5.15.0-1ubuntu2.2) ...
+Setting up libxmlb2:amd64 (0.3.24-1~ubuntu0.22.04.1) ...
+Setting up qemu-guest-agent (1:6.2+dfsg-2ubuntu6.31) ...
+qemu-guest-agent.service is a disabled or a static unit not running, not starting it.
+Setting up linux-libc-dev:amd64 (5.15.0-202.212) ...
+Setting up libnetplan0:amd64 (0.107.1-3ubuntu0.22.04.5) ...
+Setting up dnsmasq-base (2.91-0ubuntu0.22.04.2) ...
+Setting up lshw (02.19.git.2021.06.19.996aaad9c7-2ubuntu0.22.04.1) ...
+Setting up libjcat1:amd64 (0.2.3-1~ubuntu0.22.04.1) ...
+Setting up libopeniscsiusr (2.1.5-1ubuntu1.3) ...
+Setting up linux-headers-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+/etc/kernel/header_postinst.d/dkms:
+ * dkms: running auto installation service for kernel 6.8.0-1064-nvidia
+
+Kernel preparation unnecessary for this kernel. Skipping...
+
+Building module:
+cleaning build area...(bad exit status: 2)
+make -j30 KERNELRELEASE=6.8.0-1064-nvidia all KPVER=6.8.0-1064-nvidia.....
+Signing module:
+Generating a new Secure Boot signing key:
+Can't load /var/lib/shim-signed/mok/.rnd into RNG
+809B9191ED7B0000:error:12000079:random number generator:RAND_load_file:Cannot open file:../crypto/rand/randfile.c:106:Filename=/var/lib/shim-signed/mok/.rnd
+.+.+......+...+.....+.+...+..+.+...............+..+..........+...+..+...+....+...+..+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*...+..+.......+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*...+.....+...+...................+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+.+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*.......+..............+.+...+..+.......+.....+...+.......+..+....+............+.........+........+.+......+...+.....+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*.+...........+.+..+..........+.....+...+...+....+..+................+.....+....+...+..+....+.........+.....+......+..........+......+.....+.+.........+.....+.+..+......+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-----
+ - /var/lib/dkms/kernel-mft-dkms/4.30.1.1210/6.8.0-1064-nvidia/x86_64/module/mst_pciconf.ko
+ - /var/lib/dkms/kernel-mft-dkms/4.30.1.1210/6.8.0-1064-nvidia/x86_64/module/mst_pci.ko
+EFI variables are not supported on this system
+/sys/firmware/efi/efivars not found, aborting.
+cleaning build area...(bad exit status: 2)
+
+mst_pci.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+mst_pciconf.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+depmod...
+
+Kernel preparation unnecessary for this kernel. Skipping...
+
+Building module:
+cleaning build area...(bad exit status: 2)
+find . -type f -exec touch -t 200012201010 '{}' \; || true; ./configure --with-linux-release=6.8.0-1064-nvidia --prefix=/opt/knem-1.1.4.90mlnx3 ; make clean ; make....
+Signing module:
+ - /var/lib/dkms/knem/1.1.4.90mlnx3/6.8.0-1064-nvidia/x86_64/module/knem.ko
+EFI variables are not supported on this system
+/sys/firmware/efi/efivars not found, aborting.
+cleaning build area...
+
+knem.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+depmod...
+
+Kernel preparation unnecessary for this kernel. Skipping...
+
+Building module:
+cleaning build area...(bad exit status: 2)
+./ofed_scripts/pre_build.sh 6.8.0-1064-nvidia /lib/modules/6.8.0-1064-nvidia/build mlnx-ofed-kernel 24.10.OFED.24.10.3.2.5.1............................
+Signing module:
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/ib_uverbs.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/mlxfw.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/mlx_compat.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/mlx5_ib.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/mlx5_vdpa.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/ib_core.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/ib_ipoib.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/iw_cm.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/rdma_ucm.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/irdma.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/ib_umad.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/ib_cm.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/rdma_cm.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/mlxdevm.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/mlx5-vfio-pci.ko
+ - /var/lib/dkms/mlnx-ofed-kernel/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/mlx5_core.ko
+EFI variables are not supported on this system
+/sys/firmware/efi/efivars not found, aborting.
+cleaning build area...
+Forcing installation of mlnx-ofed-kernel
+
+mlx_compat.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+ib_core.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+ib_cm.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+iw_cm.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+ib_umad.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+ib_uverbs.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+rdma_cm.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+rdma_ucm.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+mlxfw.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+mlx5_core.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+mlx5_ib.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+ib_ipoib.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+mlxdevm.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+irdma.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+mlx5-vfio-pci.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+mlx5_vdpa.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+Running the post_install script:
+
+------------------------------------------
+----- mlnx-ofed-kernel post-install ------
+
+Going to build and install module 'srp' for kernel 6.8.0-1064-nvidia.
+
+Kernel preparation unnecessary for this kernel. Skipping...
+
+Building module:
+cleaning build area...
+make -j30 KERNELRELEASE=6.8.0-1064-nvidia -j16 KVER=6.8.0-1064-nvidia K_BUILD=/lib/modules/6.8.0-1064-nvidia/build....
+Signing module:
+ - /var/lib/dkms/srp/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/ib_srp.ko
+ - /var/lib/dkms/srp/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/scsi_transport_srp.ko
+EFI variables are not supported on this system
+/sys/firmware/efi/efivars not found, aborting.
+cleaning build area...
+Forcing installation of srp
+
+ib_srp.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+scsi_transport_srp.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+depmod...
+
+Going to build and install module 'iser' for kernel 6.8.0-1064-nvidia.
+
+Kernel preparation unnecessary for this kernel. Skipping...
+
+Building module:
+cleaning build area...
+make -j30 KERNELRELEASE=6.8.0-1064-nvidia -j16 KVER=6.8.0-1064-nvidia K_BUILD=/lib/modules/6.8.0-1064-nvidia/build....
+Signing module:
+ - /var/lib/dkms/iser/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/ib_iser.ko
+EFI variables are not supported on this system
+/sys/firmware/efi/efivars not found, aborting.
+cleaning build area...
+Forcing installation of iser
+
+ib_iser.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+depmod...
+
+Going to build and install module 'isert' for kernel 6.8.0-1064-nvidia.
+
+Kernel preparation unnecessary for this kernel. Skipping...
+
+Building module:
+cleaning build area...
+make -j30 KERNELRELEASE=6.8.0-1064-nvidia -j16 KVER=6.8.0-1064-nvidia K_BUILD=/lib/modules/6.8.0-1064-nvidia/build...
+Signing module:
+ - /var/lib/dkms/isert/24.10.OFED.24.10.3.2.5.1/6.8.0-1064-nvidia/x86_64/module/ib_isert.ko
+EFI variables are not supported on this system
+/sys/firmware/efi/efivars not found, aborting.
+cleaning build area...
+Forcing installation of isert
+
+ib_isert.ko:
+Running module version sanity check.
+ - Original module
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+depmod...
+
+Package 'mlnx-nfsrdma-dkms' is not installed, skipping module 'mlnx-nfsrdma'.
+
+Package 'mlnx-nvme-dkms' is not installed, skipping module 'mlnx-nvme'.
+
+Package 'fwctl-dkms' is not installed, skipping module 'fwctl'.
+
+Package 'mlx5_fwctl-dkms' is not installed, skipping module 'mlx5_fwctl'.
+------------------------------------------
+
+
+depmod...
+
+Warning: Unable to find an initial ram disk that I know how to handle.
+Will not try to make an initrd.
+
+Kernel preparation unnecessary for this kernel. Skipping...
+
+Building module:
+cleaning build area...
+unset ARCH; [ ! -h /usr/bin/cc ] && export CC=/usr/bin/gcc; env NV_VERBOSE=1 'make' -j16 NV_EXCLUDE_BUILD_MODULES='' KERNEL_UNAME=6.8.0-1064-nvidia IGNORE_XEN_PRESENCE=1 IGNORE_CC_MISMATCH=1 SYSSRC=/lib/modules/6.8.0-1064-nvidia/build LD=/usr/bin/ld.bfd CONFIG_X86_KERNEL_IBT= modules.........
+Signing module:
+ - /var/lib/dkms/nvidia-srv/580.105.08/6.8.0-1064-nvidia/x86_64/module/nvidia-uvm.ko
+ - /var/lib/dkms/nvidia-srv/580.105.08/6.8.0-1064-nvidia/x86_64/module/nvidia.ko
+ - /var/lib/dkms/nvidia-srv/580.105.08/6.8.0-1064-nvidia/x86_64/module/nvidia-modeset.ko
+ - /var/lib/dkms/nvidia-srv/580.105.08/6.8.0-1064-nvidia/x86_64/module/nvidia-peermem.ko
+ - /var/lib/dkms/nvidia-srv/580.105.08/6.8.0-1064-nvidia/x86_64/module/nvidia-drm.ko
+EFI variables are not supported on this system
+/sys/firmware/efi/efivars not found, aborting.
+cleaning build area...
+
+nvidia.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+nvidia-modeset.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+nvidia-drm.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+nvidia-uvm.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+nvidia-peermem.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+depmod...
+
+Kernel preparation unnecessary for this kernel. Skipping...
+
+Building module:
+cleaning build area...(bad exit status: 2)
+./configure --with-kerneldir=/lib/modules/6.8.0-1064-nvidia/build && cd kernel && make......
+Signing module:
+ - /var/lib/dkms/xpmem/2.7.4/6.8.0-1064-nvidia/x86_64/module/xpmem.ko
+EFI variables are not supported on this system
+/sys/firmware/efi/efivars not found, aborting.
+cleaning build area...
+
+xpmem.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/6.8.0-1064-nvidia/updates/dkms/
+
+depmod...
+   ...done.
+Setting up sosreport (4.11.2-0ubuntu0~22.04.1) ...
+Setting up nano (6.2-1ubuntu0.3) ...
+Setting up python3-netplan (0.107.1-3ubuntu0.22.04.5) ...
+Setting up netplan-generator (0.107.1-3ubuntu0.22.04.5) ...
+Setting up linux-headers-nvidia-hwe-22.04 (6.8.0-1064.67~22.04.1) ...
+Setting up python3-mpmath (1.3.0-1~lambda1) ...
+Setting up linux-tools-common (5.15.0-202.212) ...
+Setting up tmux (3.2a-4ubuntu0.3) ...
+Setting up azure-cli (2.91.0-1~jammy) ...
+Setting up linux-image-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+I: /boot/vmlinuz is now a symlink to vmlinuz-6.8.0-1064-nvidia
+I: /boot/initrd.img is now a symlink to initrd.img-6.8.0-1064-nvidia
+Setting up linux-modules-extra-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+Setting up linux-nvidia-6.8-tools-6.8.0-1064 (6.8.0-1064.67~22.04.1) ...
+Setting up open-iscsi (2.1.5-1ubuntu1.3) ...
+iscsid.service is a disabled or a static unit, not starting it.
+Setting up netplan.io (0.107.1-3ubuntu0.22.04.5) ...
+Setting up linux-tools-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+Setting up linux-modules-nvidia-fs-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+Setting up cloud-init (26.1-0ubuntu1~22.04.1) ...
+Installing new version of config file /etc/cloud/templates/chrony.conf.freebsd.tmpl ...
+Setting up linux-image-nvidia-hwe-22.04 (6.8.0-1064.67~22.04.1) ...
+Setting up linux-tools-nvidia-hwe-22.04 (6.8.0-1064.67~22.04.1) ...
+Setting up linux-nvidia-hwe-22.04 (6.8.0-1064.67~22.04.1) ...
+Processing triggers for desktop-file-utils (0.26-1ubuntu3) ...
+Processing triggers for initramfs-tools (0.140ubuntu13.5) ...
+update-initramfs: Generating /boot/initrd.img-6.8.0-1046-nvidia
+Processing triggers for libc-bin (2.35-0ubuntu3.15) ...
+Processing triggers for rsyslog (8.2112.0-2ubuntu2.5) ...
+Processing triggers for man-db (2.10.2-1) ...
+Processing triggers for dbus (1.12.20-2ubuntu4.1) ...
+Processing triggers for install-info (6.8-4build1) ...
+Processing triggers for linux-image-6.8.0-1064-nvidia (6.8.0-1064.67~22.04.1) ...
+/etc/kernel/postinst.d/dkms:
+ * dkms: running auto installation service for kernel 6.8.0-1064-nvidia
+   ...done.
+/etc/kernel/postinst.d/initramfs-tools:
+update-initramfs: Generating /boot/initrd.img-6.8.0-1064-nvidia
+/etc/kernel/postinst.d/zz-update-grub:
+Sourcing file `/etc/default/grub'
+Sourcing file `/etc/default/grub.d/50-cloudimg-settings.cfg'
+Sourcing file `/etc/default/grub.d/init-select.cfg'
+Generating grub configuration file ...
+Found linux image: /boot/vmlinuz-6.8.0-1064-nvidia
+Found initrd image: /boot/initrd.img-6.8.0-1064-nvidia
+Found linux image: /boot/vmlinuz-6.8.0-1046-nvidia
+Found initrd image: /boot/initrd.img-6.8.0-1046-nvidia
+Warning: os-prober will not be executed to detect other bootable partitions.
+Systems on them will not be added to the GRUB boot configuration.
+Check GRUB_DISABLE_OS_PROBER documentation entry.
+done
+
+Pending kernel upgrade!
+
+Running kernel version:
+  6.8.0-1046-nvidia
+
+Diagnostics:
+  The currently running kernel version is not the expected kernel version 6.8.0-1064-nvidia.
+
+Restarting the system to load the new kernel will not be handled automatically, so you should consider rebooting. [Return]
+
+Services to be restarted:
+ systemctl restart auditd.service
+ systemctl restart chrony.service
+ systemctl restart cron.service
+ systemctl restart glances.service
+ systemctl restart irqbalance.service
+ systemctl restart multipathd.service
+ systemctl restart nvidia-persistenced.service
+ systemctl restart packagekit.service
+ systemctl restart rdma-ndd.service
+ systemctl restart rpcbind.service
+ systemctl restart rtkit-daemon.service
+ systemctl restart serial-getty@ttyS0.service
+ systemctl restart sgs-demo-http.service
+ systemctl restart ssh.service
+
+Service restarts being deferred:
+ /etc/needrestart/restart.d/dbus.service
+ systemctl restart getty@tty1.service
+ systemctl restart networkd-dispatcher.service
+ systemctl restart systemd-logind.service
+ systemctl restart unattended-upgrades.service
+ systemctl restart user@1000.service
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+[1;31m[sgs] ✗[0m module 'updates' failed; earlier modules were applied, nothing after it ran

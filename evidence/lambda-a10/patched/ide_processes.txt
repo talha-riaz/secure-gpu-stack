@@ -1,0 +1,5 @@
+cloudflared-update.service                                                    masked          enabled
+cloudflared.service                                                           masked          enabled
+lambda-first-boot.service                                                     enabled         enabled
+lambda-jupyter.service                                                        masked          enabled
+cloudflared-update.timer                                                      disabled        enabled

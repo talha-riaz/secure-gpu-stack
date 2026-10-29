@@ -1,0 +1,8 @@
+# Fresh SSH login to the stock instance (no shared connection), 2026-10-29T19:54:53Z
+# command: ssh -v -i ~/.ssh/lambda_gpu ubuntu@132.145.167.169 'echo LOGGED IN; whoami'
+debug1: Authentications that can continue: publickey
+debug1: Server accepts key: /Users/talhariaz/.ssh/lambda_gpu ED25519 SHA256:zBbpCZhMnUBD+wDj12p3LF2KNUgCSdk4fLizLPstVIc explicit agent
+Authenticated to 132.145.167.169 ([132.145.167.169]:22) using "publickey".
+debug1: Sending command: echo LOGGED IN; whoami
+LOGGED IN
+ubuntu
