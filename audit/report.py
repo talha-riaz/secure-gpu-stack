@@ -135,6 +135,13 @@ class Host:
         return self.cached("vulns", build)
 
 
+def is_auto_update_held(host, pkg):
+    """True if unattended-upgrades' Package-Blacklist (regexes from the start of the name) skips pkg."""
+    patterns = host.cached("uu_blacklist", lambda: re.findall(
+        r'^Unattended-Upgrade::Package-Blacklist:: "(.+)";$', host.text("unattended.txt") or "", re.M))
+    return any(re.match(p, pkg) for p in patterns)
+
+
 def needs_key_and_code(methods):
     """True if every AuthenticationMethods alternative includes key AND keyboard-interactive."""
     if not methods or methods.strip() == "any":
@@ -432,8 +439,15 @@ def pkg_security_updates(h):
     if h.text("apt_upgrades.txt") is None:
         return Result(NA, "no data")
     sec = [l.split()[1] for l in lines if "-security" in l]
-    detail = (short_list(sec) + "; " if sec else "") + "%d updates pending in total" % len(lines)
-    return Result(FAIL if sec else PASS, "%d pending" % len(sec), detail, len(sec))
+    held = [p for p in sec if is_auto_update_held(h, p)]
+    other = [p for p in sec if p not in held]
+    detail = "%d updates pending in total" % len(lines)
+    if held:
+        detail = "%d held for the kernel/GPU maintenance window (%s); %s" % (len(held), short_list(held, 3), detail)
+    if other:
+        detail = "not held: %s; %s" % (short_list(other), detail)
+    status = FAIL if other else WARN if held else PASS
+    return Result(status, "%d pending" % len(other) + (" + %d held" % len(held) if held else ""), detail, len(sec))
 
 
 @check("Patching", "Security updates install automatically",
@@ -460,10 +474,13 @@ def pkg_gpu_pinned(h):
         return Result(NA, "no NVIDIA/CUDA packages")
     holds = set(h.lines("apt_holds.txt"))
     prefs = h.text("apt_preferences.txt") or ""
-    pinned = [p for p in pkgs if p in holds] or (["apt preferences"] if re.search(r"Package:.*(nvidia|cuda)", prefs) else [])
-    if pinned:
-        return Result(PASS, "pinned", short_list(pinned))
-    return Result(WARN, "not pinned", "%d NVIDIA/CUDA packages can change during upgrades" % len(pkgs))
+    if re.search(r"Package:.*(nvidia|cuda)", prefs):
+        return Result(PASS, "pinned (apt preferences)")
+    loose = [p for p in pkgs if p not in holds and not is_auto_update_held(h, p)]
+    if not loose:
+        return Result(PASS, "held from automatic upgrades", "%d NVIDIA/CUDA packages" % len(pkgs))
+    return Result(WARN, "%d of %d can change" % (len(loose), len(pkgs)),
+                  "can be upgraded automatically: " + short_list(loose))
 
 
 @check("Patching", "No reboot pending",
@@ -625,15 +642,22 @@ def vuln_result(h, cls):
     if rows is None:
         return Result(NA, "not scanned")
     rows = [r for r in rows if r["class"] == cls and r["severity"] in HIGH]
-    fixable = {r["id"] for r in rows if r["status"] == "fixed"}
-    crit = {r["id"] for r in rows if r["status"] == "fixed" and r["severity"] == "CRITICAL"}
-    unfixed = {r["id"] for r in rows} - fixable
-    top = Counter(r["pkg"] for r in rows if r["status"] == "fixed").most_common(5)
+    # Kernel fixes need a new kernel + reboot and, on a GPU box, matching NVIDIA modules:
+    # a maintenance-window decision, so they are counted apart from everything else.
+    kernel = {r["id"] for r in rows if r["status"] == "fixed" and r["pkg"].startswith("linux-")}
+    fixed = [r for r in rows if r["status"] == "fixed" and not r["pkg"].startswith("linux-")]
+    fixable = {r["id"] for r in fixed}
+    crit = {r["id"] for r in fixed if r["severity"] == "CRITICAL"}
+    unfixed = {r["id"] for r in rows if r["status"] != "fixed"}
+    top = Counter(r["pkg"] for r in fixed).most_common(5)
     detail = "%d critical among them; %d more critical/high have no fix yet" % (len(crit), len(unfixed))
+    if kernel:
+        detail += "; %d kernel CVEs fixed in a newer kernel (reboot + NVIDIA modules: maintenance window)" % len(kernel)
     if top:
         detail += "; most affected: " + ", ".join("%s (%d)" % pt for pt in top)
-    status = FAIL if crit else WARN if fixable else PASS
-    return Result(status, "%d fixable critical/high" % len(fixable), detail, len(fixable))
+    value = "%d fixable critical/high" % len(fixable) + (" + %d kernel" % len(kernel) if kernel else "")
+    status = FAIL if crit else WARN if fixable or kernel else PASS
+    return Result(status, value, detail, len(fixable))
 
 
 @check("Vulnerabilities", "OS packages: fixable critical/high CVEs (Trivy)",
@@ -670,7 +694,7 @@ HEADLINE = [
     ("net_external", "Ports reachable from the internet", lambda r: r.value),
     ("net_docker_bypass", "Docker bypasses the firewall?", lambda r: "no" if r.status == PASS else "yes" if r.status == FAIL else r.value),
     ("pkg_security_updates", "Pending security updates", lambda r: str(r.num) if r.num is not None else r.value),
-    ("vuln_os", "Fixable critical/high CVEs (OS)", lambda r: str(r.num) if r.num is not None else r.value),
+    ("vuln_os", "Fixable critical/high CVEs (OS)", lambda r: r.value.replace(" fixable critical/high", "")),
     ("vuln_lang", "Fixable critical/high CVEs (libraries)", lambda r: str(r.num) if r.num is not None else r.value),
     ("ssh_crypto", "ssh-audit findings", lambda r: r.value),
     ("lynis_index", "Lynis hardening index", lambda r: r.value),
