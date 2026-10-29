@@ -32,7 +32,7 @@ export TORCH_FORCE_WEIGHTS_ONLY_LOAD=1
 # Don't send usage telemetry to Hugging Face.
 export HF_HUB_DISABLE_TELEMETRY=1
 EOF
-  ok "torch.load refuses code-carrying checkpoints by default (login shells)"
+  is_dry || ok "torch.load refuses code-carrying checkpoints by default (login shells)"
 }
 
 install_model_scanner() {
@@ -60,7 +60,7 @@ if [ \$# -eq 0 ]; then echo "usage: sgs-scan-model PATH | picklescan options" >&
 case "\$1" in -*) ;; *) set -- --path "\$@" ;; esac
 exec python3 -I -c 'import sys; sys.path.insert(0, "$wheel"); from picklescan.cli import main; sys.exit(main())' "\$@"
 EOF
-  ok "sgs-scan-model installed (picklescan 1.0.4, checksum-verified)"
+  is_dry || ok "sgs-scan-model installed (picklescan 1.0.4, checksum-verified)"
 }
 
 check_package_sources() {

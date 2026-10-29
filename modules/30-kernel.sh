@@ -53,7 +53,7 @@ net.ipv4.icmp_echo_ignore_broadcasts = 1
 net.ipv4.icmp_ignore_bogus_error_responses = 1
 EOF
   run sysctl -q -e -p "$SYSCTL_FILE"   # -e: skip keys this kernel lacks (e.g. IPv6 disabled)
-  ok "kernel hardening settings applied (persist across reboots via $SYSCTL_FILE)"
+  is_dry || ok "kernel hardening settings applied (persist across reboots via $SYSCTL_FILE)"
 
   if is_dry || aa-status --enabled 2>/dev/null; then
     ok "AppArmor enabled"
