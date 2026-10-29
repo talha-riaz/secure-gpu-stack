@@ -50,6 +50,9 @@ audit_vm() {  # audit_vm VM LABEL [run_audit options]: demo services up, audit, 
   mkdir -p "$out"
   limactl copy -r "$vm:/opt/secure-gpu-stack/audit/results/$label" "$out/" >/dev/null
   python3 "$repo/audit/external_scan.py" "$(vm_ip "$vm")" --timeout 2 --out "$out/$label/external.json" >/dev/null
+  # The scan's SSH probe counts as a failed login; a few rounds would get this machine
+  # banned by fail2ban (working as intended), so clear test bans after each round.
+  limactl shell "$vm" -- sudo fail2ban-client unban --all >/dev/null 2>&1 || true
 }
 
 if ((rebaseline)) || [[ ! -f $out/before/meta.txt ]]; then
