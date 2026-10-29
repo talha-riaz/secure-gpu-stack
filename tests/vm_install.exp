@@ -1,0 +1,22 @@
+#!/usr/bin/expect -f
+# TEST VMs ONLY. Runs install.sh unattended by reading the TOTP secret that
+# enrollment prints and answering with a code computed by oathtool, standing in
+# for a phone. Never use this on a real instance: the secret passes through here.
+#
+#   sudo expect tests/vm_install.exp [install.sh args...]
+set timeout 600
+set secret ""
+spawn env SUDO_USER=ubuntu /opt/secure-gpu-stack/install.sh {*}$argv
+expect {
+  -re {Secret key \(for manual entry, time-based\): ([A-Z2-7]+)} {
+    set secret $expect_out(1,string)
+    exp_continue
+  }
+  "Enter the current 6-digit code" {
+    send "[exec oathtool --totp -b $secret]\r"
+    exp_continue
+  }
+  eof
+}
+lassign [wait] _ _ _ status
+exit $status

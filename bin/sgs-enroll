@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# sgs-enroll: enroll a user for SSH MFA (Google or Microsoft Authenticator, TOTP).
+#
+#   sudo sgs-enroll alice           # enroll alice (refuses if already enrolled)
+#   sudo sgs-enroll alice --force   # replace alice's secret (lost phone)
+#
+# The secret is written to a root-only directory, not the user's home, so a
+# process running as that user cannot read and clone it. The new secret only
+# takes effect after a valid code from the app has been entered, so a botched
+# QR scan can't lock anyone out.
+set -Eeuo pipefail
+
+TOTP_DIR=/var/lib/secure-gpu-stack/totp
+
+die() { printf 'sgs-enroll: %s\n' "$*" >&2; exit 1; }
+
+[[ $EUID -eq 0 ]] || die "must run as root"
+user=${1:-}
+[[ -n $user ]] || die "usage: sgs-enroll USER [--force]"
+id "$user" >/dev/null 2>&1 || die "no such user: $user"
+force=${2:-}
+
+secret_file=$TOTP_DIR/$user
+if [[ -s $secret_file && $force != --force ]]; then
+  echo "$user is already enrolled (use --force to replace the secret)."
+  exit 0
+fi
+
+# Talk to the terminal directly: the QR code, secret and emergency codes must not
+# end up in install.log or any other redirected output.
+{ exec </dev/tty >/dev/tty; } 2>/dev/null || die "needs an interactive terminal"
+
+install -d -m 0700 -o root -g root "$TOTP_DIR"
+tmp=$(mktemp "$TOTP_DIR/.enroll-$user.XXXXXX")
+trap 'rm -f "$tmp"' EXIT
+
+# -t TOTP, -d reject reused codes, -r/-R max 3 attempts per 30s,
+# -w 3 accept the previous/next code (clock drift), -e 5 emergency codes,
+# -C we confirm the code ourselves below.
+# Quiet: the tool's own output includes a google.com chart URL containing the
+# secret, so we render the QR code ourselves from a standard otpauth:// URI.
+google-authenticator -t -d -f -C -q -r 3 -R 30 -w 3 -e 5 -s "$tmp"
+
+secret=$(head -n1 "$tmp")
+issuer="Secure GPU Stack"
+label="$issuer:$user@$(hostname)"
+qrencode -t UTF8 -m 2 \
+  "otpauth://totp/${label// /%20}?secret=$secret&issuer=${issuer// /%20}&algorithm=SHA1&digits=6&period=30"
+echo "Secret key (for manual entry, time-based): $secret"
+echo
+echo "Scan the QR code above with Google Authenticator or Microsoft Authenticator,"
+echo "or add the secret key manually."
+for attempt in 1 2 3; do
+  read -r -p "Enter the current 6-digit code from the app: " code || die "no code entered"
+  if [[ $code =~ ^[0-9]{6}$ ]] && oathtool --totp -b -w 1 "$secret" "$code" >/dev/null 2>&1; then
+    chmod 0600 "$tmp"
+    mv -f "$tmp" "$secret_file"
+    trap - EXIT
+    echo
+    echo "✓ $user enrolled. Store these single-use emergency codes in a password manager;"
+    echo "  each one can replace an authenticator code once if the phone is lost:"
+    grep -E '^[0-9]{8}$' "$secret_file" | sed 's/^/    /'
+    exit 0
+  fi
+  echo "That code didn't match (attempt $attempt/3). Check the phone's clock is automatic."
+done
+die "enrollment failed; nothing was changed"
