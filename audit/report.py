@@ -477,7 +477,10 @@ def pkg_gpu_pinned(h):
         return Result(NA, "no NVIDIA/CUDA packages")
     holds = set(h.lines("apt_holds.txt"))
     prefs = h.text("apt_preferences.txt") or ""
-    if re.search(r"Package:.*(nvidia|cuda)", prefs):
+    # The container toolkit's own pin (50-updates) keeps it current; it holds nothing back.
+    pinned = [" ".join(p for p in m.split() if "container" not in p)
+              for m in re.findall(r"^Package:(.*)$", prefs, re.M)]
+    if any(re.search(r"nvidia|cuda", p) for p in pinned):
         return Result(PASS, "pinned (apt preferences)")
     loose = [p for p in pkgs if p not in holds and not is_auto_update_held(h, p)]
     if not loose:
