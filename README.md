@@ -49,7 +49,8 @@ run.
   the push, an account with it, and its availability at every login.
 
 For a standalone GPU instance, the code keeps the second factor on the box with no third party in the login
-path. For a team that already runs one of those services, push means swapping the PAM module (for example Duo's
+path. The recordings use Google Authenticator. Microsoft Authenticator implements the same TOTP standard
+(RFC 6238) and adds the same QR code, but it wasn't used in this run. For a team that already runs one of those services, push means swapping the PAM module (for example Duo's
 `pam_duo`); the sshd side stays the same.
 
 ## What it looks like

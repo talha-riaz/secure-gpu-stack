@@ -68,7 +68,8 @@ Same conditions for both audits, so the comparison is fair:
 ## Recordings
 
 Each GIF has a PNG of its final frame next to it (same name, `.png`) for viewers that can't play animations.
-Recorded on the tester's Mac against the instance; most clips print the date first, then the output.
+Recorded on the tester's Mac against the instance, with Google Authenticator on the tester's phone providing the
+codes; most clips print the date first, then the output.
 
 | Recording | Command (from the Mac) | Shows |
 |---|---|---|
