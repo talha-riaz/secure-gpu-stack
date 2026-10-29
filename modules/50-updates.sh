@@ -15,6 +15,7 @@
 #   training jobs. Pending restarts and reboots are reported instead.
 
 UU_CONF=/etc/apt/apt.conf.d/52secure-gpu-stack-updates
+TOOLKIT_PIN=/etc/apt/preferences.d/secure-gpu-stack-container-toolkit
 : "${SGS_PATCH_ALL:=0}"   # 1 = also upgrade the held kernel/GPU packages now (reboot needed)
 
 # Third-party origins (apt-cache policy: o=..., a=...) whose updates install automatically.
@@ -28,8 +29,9 @@ EXTRA_ORIGINS=(
 # Python regexes matched from the start of package names (unattended-upgrades semantics).
 # The container toolkit (nvidia-container-*, libnvidia-container*) is excluded from the
 # NVIDIA hold: it is user space, independent of the driver, and patches container escapes.
+# So is linux-tools-common: plain scripts, not tied to the running kernel.
 HOLD_PATTERNS=(
-  'linux-image-' 'linux-headers-' 'linux-modules-' 'linux-tools-' 'linux-objects-nvidia-'
+  'linux-image-' 'linux-headers-' 'linux-modules-' 'linux-tools-(?!common)' 'linux-objects-nvidia-'
   'linux-signatures-nvidia-' 'linux-nvidia' 'linux-generic' 'linux-virtual' 'linux-aws' 'linux-gcp'
   'nvidia-(?!container)' 'libnvidia-(?!container)' 'cuda' 'libcuda' 'libcudnn' 'libnccl' 'libcuinj' 'lambda-stack'
   'libcu(blas|fft|rand|solver|sparse|pti|tensor|file)' 'libnv(rtc|jitlink|toolsext|infer|jpeg|blas|vm|sdm)'
@@ -38,6 +40,7 @@ HOLD_PATTERNS=(
 module_main() {
   apt_install unattended-upgrades
   write_update_policy
+  pin_container_toolkit
   apply_security_updates
   ((SGS_PATCH_ALL)) && apply_held_updates
   is_dry || report_pending
@@ -70,6 +73,21 @@ write_update_policy() {
     echo "};"
   } | write_file "$UU_CONF" 0644
   run systemctl enable --now apt-daily.timer apt-daily-upgrade.timer
+}
+
+# Lambda pins its own repository above 1000, which lets apt downgrade: every manual
+# `apt upgrade` would swap NVIDIA's patched container toolkit for Lambda's older build,
+# and unattended-upgrades would swap it back the next morning. At equal priority apt
+# picks the newest version, whichever repository it comes from.
+pin_container_toolkit() {
+  dpkg-query -W nvidia-container-toolkit >/dev/null 2>&1 || return 0
+  write_file "$TOOLKIT_PIN" 0644 <<'EOF'
+# Managed by secure-gpu-stack. Lambda's repo is pinned at 1001; match it for NVIDIA's
+# own repo so apt never downgrades the container toolkit (container-escape fixes).
+Package: nvidia-container-toolkit nvidia-container-toolkit-base libnvidia-container-tools libnvidia-container1
+Pin: origin nvidia.github.io
+Pin-Priority: 1001
+EOF
 }
 
 apply_security_updates() {
