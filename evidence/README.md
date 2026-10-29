@@ -14,6 +14,19 @@ Regenerate the report from the raw files (Python 3 standard library only):
 python3 audit/report.py evidence/lambda-a10/before evidence/lambda-a10/after -o evidence/report
 ```
 
+## Test setup
+
+| | |
+|---|---|
+| Instance | Lambda Cloud **1x A10 (24 GB PCIe)**: 30 vCPUs, 200 GiB RAM, 1.4 TiB SSD, $1.29/hour, chosen as the cheapest GPU on offer |
+| Region | Virginia, USA (`us-east-1`) |
+| Base image | **Lambda Stack 22.04**: Ubuntu 22.04.5, kernel 6.8.0-1046-nvidia, NVIDIA driver 580.105.08 (open kernel modules, DKMS), CUDA and PyTorch 2.7.0 from Lambda's repository |
+| Filesystem | None attached |
+| Cloud firewall | Lambda's global rules (TCP 22 and ICMP from anywhere), plus a `sgs-demo` ruleset allowing all TCP from the tester's IP only, so scans from the tester measure the host firewall |
+| SSH key | ed25519, added in the Lambda console and chosen at launch |
+| Tester's machine | MacBook Pro (Apple M3 Pro), macOS 15.1, OpenSSH 9.8p1, Python 3.12; Google Authenticator on the tester's phone |
+| Local test VMs | Lima 2.2.1 (Apple Virtualization), Ubuntu 22.04 arm64, 2 vCPUs, 2 GiB RAM |
+
 ## The two audits
 
 Each audit is a folder of raw command output written by [`audit/run_audit.sh`](../audit/run_audit.sh)

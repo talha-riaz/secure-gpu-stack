@@ -27,6 +27,10 @@ run.
 | ssh-audit | 6 fail, 16 warn | 0 fail, 5 warn |
 | GPU: CUDA, PyTorch, GPU in containers | works | **works** (smoke test 3/3) |
 
+The last column also includes the kernel, driver and CUDA updates the installer holds back so it never breaks
+a running job, applied afterwards with a reboot (`sudo SGS_PATCH_ALL=1 ./install.sh --only updates && sudo reboot`).
+Right after `install.sh` alone the result is 28/33, with those updates waiting.
+
 **Reviewing this quickly:**
 1. Start with the [requirement-to-evidence map](evidence/README.md#requirement--evidence): every claim has a raw
    file or a recording next to it.
@@ -98,6 +102,10 @@ What it deliberately does **not** do:
 - Google Authenticator or Microsoft Authenticator on your phone;
 - `ssh` and Python 3 on your laptop (only for the measurements; no packages needed).
 
+The commands below assume your SSH key is loaded in ssh-agent or is your default key; otherwise add
+`-i <path to your key>` to `ssh` and `scp`. **Want before/after numbers?** Run the first half of
+[Measure it yourself](#measure-it-yourself) before step 2.
+
 **1. Copy the repository to the instance** (from your laptop):
 
 ```bash
@@ -110,8 +118,12 @@ scp -r secure-gpu-stack ubuntu@<ip>:          # or, on the instance: git clone <
 ssh ubuntu@<ip>
 cd secure-gpu-stack
 sudo ./install.sh --dry-run    # optional: show every change, apply nothing
-sudo ./install.sh              # about 5 minutes; scan the QR code with your app and type the code it shows
+sudo ./install.sh              # scan the QR code with your app and type the code it shows
 ```
+
+The install takes 5–10 minutes. Most of it is installing the pending security updates (about 200 on a fresh
+image), which prints nothing until it finishes. If it seems stuck after `[updates] installing pending security
+updates`, it isn't: give it up to 10 minutes.
 
 **3. Check** before you close that session. Lambda has no recovery console, so a lockout would mean losing the
 instance. Keep the session open and, in a **new** terminal:
@@ -134,31 +146,7 @@ Store the emergency codes the installer printed. Running `sudo ./install.sh` aga
 | `SGS_AUDIT_IMMUTABLE=1` | Lock the audit rules until reboot |
 
 Pass them through sudo, for example `sudo SGS_ALLOW_PORTS=443/tcp ./install.sh`.
-
-## Day to day
-
-```bash
-sudo sgs-enroll alice                      # alice scans the QR shown here (in person or on a call); no code, no login
-sudo sgs-enroll alice --force              # lost phone: new secret (or use an emergency code)
-sgs-scan-model ./downloaded-model.bin      # check a checkpoint before loading it
-```
-
-**Jupyter or TensorBoard** listen on localhost and are reached through SSH, so they sit behind the key and the
-code:
-
-```bash
-jupyter lab --no-browser --ip 127.0.0.1 --port 8888   # on the instance
-ssh -L 8888:localhost:8888 ubuntu@<ip>                # on your laptop, then open http://localhost:8888
-```
-
-**Maintenance window** for the held kernel, driver and CUDA updates. This is what produced the
-[`after`](evidence/lambda-a10/after/) evidence:
-
-```bash
-sudo SGS_PATCH_ALL=1 ./install.sh --only updates && sudo reboot
-nvidia-smi && bash -lc 'python3 tests/gpu_smoke.py'   # after the reboot: GPU and the ML protections working?
-dpkg -l 'linux-*<previous kernel version>*'           # then remove the old kernel's packages with sudo apt-get purge
-```
+Removing a port from `SGS_ALLOW_PORTS` and running again closes it.
 
 ## Measure it yourself
 
@@ -173,15 +161,15 @@ your laptop, and the report wherever both results are:
 
 ```bash
 # on the instance, BEFORE ./install.sh
+cd secure-gpu-stack
 sudo ./audit/demo_services.sh start                     # optional: two deliberately exposed services for the firewall to block
-sudo ./audit/run_audit.sh before --out ~/sgs-before     # about 10 minutes; --no-trivy skips the CVE scan
+sudo ./audit/run_audit.sh before --out ~/sgs-before     # a few minutes; --no-trivy skips the CVE scan
 
 # on your laptop
 scp -r ubuntu@<ip>:sgs-before .
 python3 secure-gpu-stack/audit/external_scan.py <ip> --out sgs-before/external.json
 
-# on the instance
-sudo ./install.sh
+# on the instance: install (step 2 above), then
 sudo ./audit/run_audit.sh after --out ~/sgs-after
 
 # on your laptop (copying now asks for the code)
@@ -189,6 +177,9 @@ scp -r ubuntu@<ip>:sgs-after .
 python3 secure-gpu-stack/audit/external_scan.py <ip> --out sgs-after/external.json
 python3 secure-gpu-stack/audit/report.py sgs-before sgs-after -o report
 ```
+
+Expect about 28/33 right after install: the kernel, driver and CUDA updates the installer holds back are still
+waiting (see the note under the results above).
 
 Lambda's default cloud firewall only lets port 22 through, so the external scan looks the same before and after.
 To measure the host firewall, as the evidence does, add a cloud firewall ruleset that allows all TCP from your IP
@@ -215,6 +206,38 @@ Lima manages the VM through your own account, so the test VM exempts that one ac
 the audit both flag it, which also shows the exempt-account check working. Once `ubuntu` is enrolled on
 `sgs-test`, and a second VM `sgs-stock` exists as the untouched baseline,
 [`tests/lima/iterate.sh`](tests/lima/iterate.sh) runs a full install → audit → report round in one command.
+
+## Day to day
+
+**Adding a person** (as `ubuntu`, in `~/secure-gpu-stack`). They can't log in until they're enrolled:
+
+```bash
+sudo adduser --disabled-password --gecos "" alice     # no password: alice logs in with her key and her code
+sudo install -d -m 700 -o alice -g alice /home/alice/.ssh
+echo "<alice's public key>" | sudo tee /home/alice/.ssh/authorized_keys
+sudo chown alice:alice /home/alice/.ssh/authorized_keys
+sudo sgs-enroll alice                                 # alice scans the QR shown here (in person or on a call)
+sudo ./install.sh --only audit-logging                # adds the audit watch on alice's ~/.ssh
+```
+
+Lost phone: `sudo sgs-enroll alice --force` issues a new secret, or she uses one of her emergency codes.
+
+**Jupyter or TensorBoard** listen on localhost and are reached through SSH, so they sit behind the key and the
+code. Lambda installs JupyterLab for the `ubuntu` account only; any other account runs
+`python3 -m pip install --user jupyterlab` once, then logs in again.
+
+```bash
+jupyter lab --no-browser --ip 127.0.0.1 --port 8888   # on the instance, as ubuntu
+ssh -L 8888:localhost:8888 ubuntu@<ip>                # on your laptop
+```
+
+Then open the `http://127.0.0.1:8888/lab?token=…` link Jupyter printed (`jupyter server list` shows it again).
+
+**Checking a model** before anyone loads it:
+
+```bash
+sgs-scan-model ./downloaded-model.bin
+```
 
 ## Design decisions
 
@@ -258,10 +281,11 @@ The full list is in [THREAT_MODEL.md](docs/THREAT_MODEL.md) and [FINDINGS.md](do
 **On local VMs** (Lima, Ubuntu 22.04): many install → audit → fix rounds; a fresh install of the final code; a
 second run that rewrote 0 files; a real reboot that kept every setting.
 
-**On a real Lambda `gpu_1x_a10`** ([evidence](evidence/README.md)):
+**On a real Lambda `gpu_1x_a10`** (1x A10, us-east-1, Lambda Stack 22.04; full
+[test setup](evidence/README.md#test-setup) and [evidence](evidence/README.md)):
 1. Audit of the stock image.
 2. Install, then the recordings above.
-3. Maintenance window: held updates installed, real reboot, previous kernel removed.
+3. The held kernel, driver and CUDA updates installed, real reboot, previous kernel removed.
 4. The final code re-applied (a second run that rewrote 0 files), then a second real reboot.
 5. Final audit, with the GPU smoke test and the GPU inside a container.
 
