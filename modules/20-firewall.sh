@@ -62,9 +62,21 @@ configure_ufw() {
   for port in ${SGS_ALLOW_PORTS//,/ }; do
     run ufw allow "$port" comment 'secure-gpu-stack: SGS_ALLOW_PORTS'
   done
+  close_removed_ports
   run ufw logging low
   run ufw --force enable
   run ufw reload   # picks up the DOCKER-USER rules in after.rules
+}
+
+# A port taken out of SGS_ALLOW_PORTS is closed again: re-running applies the desired
+# state, it doesn't only add to it. Only rules this installer opened are touched.
+close_removed_ports() {
+  local spec wanted=" ${SGS_ALLOW_PORTS//,/ } "
+  while read -r spec; do
+    [[ $wanted == *" $spec "* ]] && continue
+    run ufw delete allow "$spec"
+    log "closed $spec (no longer in SGS_ALLOW_PORTS)"
+  done < <(ufw show added 2>/dev/null | awk '/secure-gpu-stack: SGS_ALLOW_PORTS/ { print $3 }')
 }
 
 # Replace our block in a ufw after*.rules file, or append it.
@@ -158,5 +170,9 @@ verify_firewall() {
   # fail2ban needs a moment to start its jails.
   for _ in 1 2 3 4 5; do fail2ban-client status sshd >/dev/null 2>&1 && break; sleep 1; done
   fail2ban-client status sshd >/dev/null 2>&1 || die "fail2ban sshd jail is not running"
-  ok "inbound: only SSH ($(ssh_ports | paste -sd, -)) is open; containers not reachable from outside; fail2ban active"
+  local ssh open
+  ssh=$(ssh_ports | paste -sd, -)
+  open="SSH ($ssh) is"
+  [[ -n $SGS_ALLOW_PORTS ]] && open="SSH ($ssh) and ${SGS_ALLOW_PORTS//,/, } (SGS_ALLOW_PORTS) are"
+  ok "inbound: only $open open; containers not reachable from outside; fail2ban active"
 }
