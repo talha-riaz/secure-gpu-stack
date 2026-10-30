@@ -193,6 +193,58 @@ What it deliberately does **not** do:
 
 [Design decisions](#design-decisions) explains each.
 
+## Design decisions
+
+- **A layer, not a fork of the image.** Lambda Stack's value is its curated driver, CUDA and PyTorch set. This
+  changes configuration around it and leaves those packages alone, so it applies to any instance Lambda launches,
+  today's image or next month's.
+- **Code-based MFA, enforced by sshd itself.** It needs no external service at login. Secrets sit in a root-only
+  directory, not `~/.google_authenticator`, so a process running as the user can't copy them and clone the second
+  factor. No `nullok`, so forgetting to enroll fails closed.
+- **Holds, not auto-reboots.** Unattended kernel or driver upgrades are the classic way to kill a week-long
+  training run. Everything else patches daily; the kernel, driver and CUDA move together in a window the team
+  picks. The report counts what is waiting, so the hold is visible, not silent.
+- **Close the browser IDE by default.** It is a root terminal that SSH MFA can't cover, published through a tunnel
+  no firewall sees. Jupyter itself is kept, behind `ssh -L`. Teams that accept the Lambda console login as their
+  gate can opt back in.
+- **Firewall Docker too.** "ufw deny" with a public `docker run -p` is the most common false sense of security on
+  GPU boxes. Both layers are covered: the `DOCKER-USER` chain and the localhost publish default.
+- **Never weaken research workflows quietly.** IP forwarding stays on (Docker), `ptrace_scope` stays 1 (py-spy,
+  gdb), GPU devices stay world-usable (containers), and Python packages are reported, not upgraded under
+  experiments.
+- **Measure, don't assert.** The audit is separate from the installer, collects raw output only, and the report
+  says which file every verdict came from, so any reviewer can check a number without trusting the tool.
+
+## Limitations
+
+The full list is in [THREAT_MODEL.md](docs/THREAT_MODEL.md) and [FINDINGS.md](docs/FINDINGS.md#still-open).
+
+- **Applied after boot, not baked into an image.** Until `install.sh` runs, the stock exposure applies, narrowed
+  by Lambda's default cloud rule (SSH only). A custom image or launch-time automation would close that window.
+- **Audit logs stay on the host**, so root can erase them. Shipping them off the box is the real fix.
+- **The weights-only default reaches login shells only** (every interactive SSH session). Commands run as
+  `ssh host 'cmd'`, systemd units and containers don't get it.
+- **An authenticated connection kept open by the user's own client** can open new sessions one after another
+  without a new code; `MaxSessions 1` only stops them running in parallel.
+- **Tested on Ubuntu 22.04**, on Lambda (x86_64, A10) and in local VMs (arm64). Ubuntu 24.04 is untested.
+- **3 checks still don't pass:** classical SSH key exchanges kept for older clients, 5 CVEs waiting on vendor
+  rebuilds, and Python CVEs inside Lambda's (now disabled) IDE environment and Microsoft's Azure CLI.
+
+## How it was tested
+
+**On local VMs** (Lima, Ubuntu 22.04): many install → audit → fix rounds; a fresh install of the final code; a
+second run that rewrote 0 files; a real reboot that kept every setting.
+
+**On a real Lambda `gpu_1x_a10`** (1x A10, us-east-1, Lambda Stack 22.04; full
+[test setup](evidence/README.md#test-setup) and [evidence](evidence/README.md)):
+1. Audit of the stock image.
+2. Install, then the recordings above.
+3. The held kernel, driver and CUDA updates installed, real reboot, previous kernel removed.
+4. The final code re-applied (a second run that rewrote 0 files), then a second real reboot.
+5. Final audit, with the GPU smoke test and the GPU inside a container.
+
+All shell code passes `shellcheck`.
+
 ## Install
 
 **You need:**
@@ -336,58 +388,6 @@ Then open the `http://127.0.0.1:8888/lab?token=…` link Jupyter printed (`jupyt
 ```bash
 sgs-scan-model ./downloaded-model.bin
 ```
-
-## Design decisions
-
-- **A layer, not a fork of the image.** Lambda Stack's value is its curated driver, CUDA and PyTorch set. This
-  changes configuration around it and leaves those packages alone, so it applies to any instance Lambda launches,
-  today's image or next month's.
-- **Code-based MFA, enforced by sshd itself.** It needs no external service at login. Secrets sit in a root-only
-  directory, not `~/.google_authenticator`, so a process running as the user can't copy them and clone the second
-  factor. No `nullok`, so forgetting to enroll fails closed.
-- **Holds, not auto-reboots.** Unattended kernel or driver upgrades are the classic way to kill a week-long
-  training run. Everything else patches daily; the kernel, driver and CUDA move together in a window the team
-  picks. The report counts what is waiting, so the hold is visible, not silent.
-- **Close the browser IDE by default.** It is a root terminal that SSH MFA can't cover, published through a tunnel
-  no firewall sees. Jupyter itself is kept, behind `ssh -L`. Teams that accept the Lambda console login as their
-  gate can opt back in.
-- **Firewall Docker too.** "ufw deny" with a public `docker run -p` is the most common false sense of security on
-  GPU boxes. Both layers are covered: the `DOCKER-USER` chain and the localhost publish default.
-- **Never weaken research workflows quietly.** IP forwarding stays on (Docker), `ptrace_scope` stays 1 (py-spy,
-  gdb), GPU devices stay world-usable (containers), and Python packages are reported, not upgraded under
-  experiments.
-- **Measure, don't assert.** The audit is separate from the installer, collects raw output only, and the report
-  says which file every verdict came from, so any reviewer can check a number without trusting the tool.
-
-## Limitations
-
-The full list is in [THREAT_MODEL.md](docs/THREAT_MODEL.md) and [FINDINGS.md](docs/FINDINGS.md#still-open).
-
-- **Applied after boot, not baked into an image.** Until `install.sh` runs, the stock exposure applies, narrowed
-  by Lambda's default cloud rule (SSH only). A custom image or launch-time automation would close that window.
-- **Audit logs stay on the host**, so root can erase them. Shipping them off the box is the real fix.
-- **The weights-only default reaches login shells only** (every interactive SSH session). Commands run as
-  `ssh host 'cmd'`, systemd units and containers don't get it.
-- **An authenticated connection kept open by the user's own client** can open new sessions one after another
-  without a new code; `MaxSessions 1` only stops them running in parallel.
-- **Tested on Ubuntu 22.04**, on Lambda (x86_64, A10) and in local VMs (arm64). Ubuntu 24.04 is untested.
-- **3 checks still don't pass:** classical SSH key exchanges kept for older clients, 5 CVEs waiting on vendor
-  rebuilds, and Python CVEs inside Lambda's (now disabled) IDE environment and Microsoft's Azure CLI.
-
-## How it was tested
-
-**On local VMs** (Lima, Ubuntu 22.04): many install → audit → fix rounds; a fresh install of the final code; a
-second run that rewrote 0 files; a real reboot that kept every setting.
-
-**On a real Lambda `gpu_1x_a10`** (1x A10, us-east-1, Lambda Stack 22.04; full
-[test setup](evidence/README.md#test-setup) and [evidence](evidence/README.md)):
-1. Audit of the stock image.
-2. Install, then the recordings above.
-3. The held kernel, driver and CUDA updates installed, real reboot, previous kernel removed.
-4. The final code re-applied (a second run that rewrote 0 files), then a second real reboot.
-5. Final audit, with the GPU smoke test and the GPU inside a container.
-
-All shell code passes `shellcheck`.
 
 ## Repository layout
 
