@@ -16,7 +16,7 @@ python3 audit/report.py evidence/lambda-a10/before evidence/lambda-a10/after -o 
 
 ## Test setup
 
-| | |
+| Component | Details |
 |---|---|
 | Instance | Lambda Cloud **1x A10 (24 GB PCIe)**: 30 vCPUs, 200 GiB RAM, 1.4 TiB SSD, $1.29/hour, chosen as the cheapest GPU on offer |
 | Region | Virginia, USA (`us-east-1`) |
