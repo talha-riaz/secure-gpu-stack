@@ -261,7 +261,7 @@ The commands below assume your SSH key is loaded in ssh-agent or is your default
 **1. Copy the repository to the instance** (from your laptop):
 
 ```bash
-scp -r secure-gpu-stack ubuntu@<ip>:          # or, on the instance: git clone <repository URL> secure-gpu-stack
+scp -r secure-gpu-stack ubuntu@<ip>:          # or, on the instance: git clone https://github.com/talha-riaz/secure-gpu-stack.git
 ```
 
 **2. Install** (on the instance, as `ubuntu`):
