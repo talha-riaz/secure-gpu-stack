@@ -29,10 +29,6 @@ run.
 | ssh-audit | 6 fail, 16 warn | 0 fail, 5 warn |
 | GPU: CUDA, PyTorch, GPU in containers | works | **works** (smoke test 3/3) |
 
-The last column also includes the kernel, driver and CUDA updates the installer holds back so it never breaks
-a running job, applied afterwards with a reboot (`sudo SGS_PATCH_ALL=1 ./install.sh --only updates && sudo reboot`).
-Right after `install.sh` alone the result is 28/33, with those updates waiting.
-
 ### Reviewing this quickly
 
 1. Watch [What it looks like](#what-it-looks-like): recordings of the stock image and the hardened one, each
@@ -285,7 +281,7 @@ python3 secure-gpu-stack/audit/report.py sgs-before sgs-after -o report
 ```
 
 Expect about 28/33 right after install: the kernel, driver and CUDA updates the installer holds back are still
-waiting (see the note under the results above).
+waiting. Applying them (`sudo SGS_PATCH_ALL=1 ./install.sh --only updates && sudo reboot`) gives the 30/33 above.
 
 Lambda's default cloud firewall only lets port 22 through, so the external scan looks the same before and after.
 To measure the host firewall, as the evidence does, add a cloud firewall ruleset that allows all TCP from your IP
