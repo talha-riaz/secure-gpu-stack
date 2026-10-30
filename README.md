@@ -169,15 +169,9 @@ can't lock anyone out. The QR code, secret and emergency codes are blurred.
 | "compare the images" | The stock Lambda Stack image and the hardened one, audited by the same tool on the same instance: stock, then after install, a kernel update and a reboot | [`evidence/lambda-a10/`](evidence/lambda-a10/) ([before](evidence/lambda-a10/before/) · [after](evidence/lambda-a10/after/)) |
 | "the cheapest gpu" | `gpu_1x_a10` | [instance](evidence/media/lambda-instance-running.png) |
 
-**"Approval" is a code, not a push notification.** Both apps can approve a login in two ways:
-- **A 6-digit code (TOTP).** It's an open standard and works offline: the server checks the code itself.
-- **A push notification you tap.** That requires a cloud identity service (Microsoft Entra ID, Duo, Okta) to send
-  the push, an account with it, and its availability at every login.
-
-For a standalone GPU instance, the code keeps the second factor on the box with no third party in the login
-path. The recordings use Google Authenticator. Microsoft Authenticator implements the same TOTP standard
-(RFC 6238) and adds the same QR code, but it wasn't used in this run. For a team that already runs one of those services, push means swapping the PAM module (for example Duo's
-`pam_duo`); the sshd side stays the same.
+The second factor is a 6-digit code from the app (TOTP, RFC 6238), checked on the instance itself, with no third
+party in the login path. The recordings use Google Authenticator; Microsoft Authenticator implements the same
+standard and reads the same QR code, but it wasn't used in this run.
 
 ## What each module does
 
