@@ -101,7 +101,7 @@ codes; most clips print the date first, then the output.
 
 ## What was curated or redacted
 
-Nothing here was edited except as listed:
+The main ways the evidence was prepared for publishing:
 
 - **The tester's home IP** is replaced by `198.51.100.7` (a reserved documentation address, RFC 5737) in
   `fail2ban_ban.txt` and `extra/ssh_server_log.txt`, and covered in `media/lambda-demo-ruleset-my-ip-only.png`.
