@@ -59,21 +59,122 @@ path. The recordings use Google Authenticator. Microsoft Authenticator implement
 
 ## What it looks like
 
-| Stock image: the key alone is enough | After: the key, then the code |
-|---|---|
-| ![SSH login with a key only](evidence/media/ssh-before-key-alone-logs-in.gif) | ![SSH login asking for a verification code](evidence/media/ssh-after-key-and-code.gif) |
+Recorded on the Lambda A10: once on the **stock image (before)**, once with **Secure GPU Stack installed
+(after)**. "Look for" quotes the exact text that proves each point. The [evidence index](evidence/README.md#recordings)
+lists the command behind every recording and keeps a PNG of each final frame.
 
-| After: key alone is refused | After: wrong codes are refused, then banned |
-|---|---|
-| ![Permission denied (keyboard-interactive)](evidence/media/ssh-after-key-alone-denied.gif) | ![Too many authentication failures](evidence/media/ssh-after-wrong-code-denied.gif) |
+### 1. Logging in over SSH
 
-**Enrolling** shows a QR code in the terminal. The secret only takes effect once the app produces a valid code,
-so a bad scan can't lock anyone out ([redacted screenshot](evidence/media/enrollment-redacted.png)).
+**Before**: `ssh` with just the key.
 
-**The side door this closes.** On the stock image, the console's "Launch" button opens JupyterLab in the browser,
-through a tunnel that no firewall can see. Its terminal is root, with no SSH key and no code
-([recording](evidence/media/cloud-ide-before-root-shell.gif)). After install it's off, and Jupyter is reached
-through SSH instead ([recording](evidence/media/jupyter-via-ssh-tunnel-after.gif)).
+![Stock image: SSH logs in with the key alone](evidence/media/ssh-before-key-alone-logs-in.gif)
+
+Look for: no code prompt, straight to `Logged in as ubuntu … with the key alone`. Anyone with a copy of the key
+is in.
+
+**After**: the same command.
+
+![After: SSH asks for a verification code after the key](evidence/media/ssh-after-key-and-code.gif)
+
+Look for: `Verification code:` after the key is accepted, then `Logged in … with key + authenticator code`. The
+code came from Google Authenticator.
+
+### 2. Attacks on SSH (after)
+
+**A stolen key on its own.** `ssh -o BatchMode=yes` can't answer the code prompt, just like a script holding a
+stolen key.
+
+![After: key alone is refused](evidence/media/ssh-after-key-alone-denied.gif)
+
+Look for: `Permission denied (keyboard-interactive)`. The key was accepted, but there is no way in without the code.
+
+**Guessing codes.**
+
+![After: wrong codes are refused](evidence/media/ssh-after-wrong-code-denied.gif)
+
+Look for: three `Verification code:` prompts, then `Too many authentication failures`.
+
+**Repeat offenders.**
+
+![After: the address is banned](evidence/media/ssh-after-fail2ban-ban.gif)
+
+Look for: `Connection refused`. After repeated failures fail2ban blocks the address outright. During the test it
+also banned two real attackers ([log](evidence/lambda-a10/fail2ban_ban.txt)).
+
+### 3. The side door around SSH
+
+**Before**: Lambda's console has a "Launch" button that opens JupyterLab in the browser.
+
+![Stock image: the browser IDE's terminal is root without SSH](evidence/media/cloud-ide-before-root-shell.gif)
+
+Look for: the `lambdaspaces.com` address (an outbound tunnel no firewall sees), then `whoami` → `ubuntu` and
+`ROOT WITHOUT PASSWORD`. That is root on the GPU box with no SSH key and no code.
+
+**After**: the IDE and its tunnel are off.
+
+![After: Lambda's console reports the notebook is down](evidence/media/after-cloud-ide-down.png)
+
+Look for: Lambda's own console saying `Your Jupyter Notebook is down`. Section 7 shows the safe way to use Jupyter.
+
+### 4. Ports exposed to the internet
+
+Run from the tester's laptop. Two stand-in services were listening the whole time: a web server on 8000 and a Docker
+container on 8080, plus the image's own rpcbind on 111.
+
+**Before**
+
+![Stock image: services reachable from outside](evidence/media/ports-before-exposed.gif)
+
+Look for: `if you can read this from outside, it is exposed` twice, and `port 111 … succeeded!`.
+
+**After**: the same services, still running.
+
+![After: the same ports time out](evidence/media/ports-after-blocked.gif)
+
+Look for: `Connection timed out` twice and `port 111 … failed: Operation timed out`. The host firewall now drops
+them, including the Docker container, which normally bypasses it.
+
+### 5. A malicious model checkpoint
+
+[`tests/gpu_smoke.py`](tests/gpu_smoke.py) checks CUDA, then plants a booby-trapped checkpoint that runs code
+when loaded.
+
+**Before**
+
+![Stock image: the payload runs](evidence/media/pickle-before-runs-code.gif)
+
+Look for: `1/3 passed`: `scanner not installed` and `payload ran: True`.
+
+**After**
+
+![After: flagged and refused](evidence/media/pickle-after-blocked.gif)
+
+Look for: `3/3 passed`. The scanner reports `dangerous import`, and `torch.load` is `refused (UnpicklingError),
+payload did not run`. The `UserWarning` underneath is PyTorch commenting on the file's pickle format, not a
+failure.
+
+### 6. The GPU still works (after)
+
+![After: GPU works on the host and in a container](evidence/media/gpu-in-container-after.gif)
+
+Look for: `Verification code:` (it's still SSH with MFA), then `NVIDIA A10, 580.105.08` on the host and
+`GPU 0: NVIDIA A10` inside a Docker container.
+
+### 7. Jupyter, the safe way (after)
+
+![After: JupyterLab through an SSH tunnel](evidence/media/jupyter-via-ssh-tunnel-after.gif)
+
+Look for: `ssh -L 8888:127.0.0.1:8888 …` asking for `Verification code:`, then JupyterLab at `127.0.0.1:8888` in the
+browser. It is reached through the SSH tunnel, behind the key and the code. The recording is cut where it would show
+the instance's login banner (the tester's IP) and Jupyter's access token.
+
+### Enrolling
+
+![Enrollment, with the QR code, secret and emergency codes blurred](evidence/media/enrollment-redacted.png)
+
+Look for: the QR code for Google or Microsoft Authenticator; the code typed back to confirm it; `ubuntu enrolled`;
+then `SSH now requires key + authenticator code`. The secret only takes effect after a valid code, so a bad scan
+can't lock anyone out. The QR code, secret and emergency codes are blurred.
 
 ## What each module does
 

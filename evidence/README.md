@@ -95,7 +95,7 @@ codes; most clips print the date first, then the output.
 | [ports-before-exposed](media/ports-before-exposed.gif) / [ports-after-blocked](media/ports-after-blocked.gif) | `curl -m 5 http://<ip>:8000; curl -m 5 http://<ip>:8080; nc -vz -G 3 <ip> 111` | Before: both demo services and rpcbind answer. After: all time out |
 | [pickle-before-runs-code](media/pickle-before-runs-code.gif) / [pickle-after-blocked](media/pickle-after-blocked.gif) | `ssh … "bash -lc 'python3 ~/secure-gpu-stack/tests/gpu_smoke.py'"` | Before 1/3: the payload ran. After 3/3: flagged by the scanner and refused by `torch.load` |
 | [gpu-in-container-after](media/gpu-in-container-after.gif) | `ssh … 'nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv; sudo docker run --rm --gpus all ubuntu:22.04 nvidia-smi -L'` | GPU works on the host and in a container after hardening |
-| [jupyter-via-ssh-tunnel-after](media/jupyter-via-ssh-tunnel-after.gif) | `ssh -L 8888:localhost:8888 …`, Jupyter bound to 127.0.0.1 (2× speed) | The supported way to use Jupyter: behind key + code |
+| [jupyter-via-ssh-tunnel-after](media/jupyter-via-ssh-tunnel-after.gif) | `ssh -L 8888:127.0.0.1:8888 -i ~/.ssh/lambda_gpu ubuntu@<ip>`, Jupyter bound to 127.0.0.1 (2× speed) | The supported way to use Jupyter: behind key + code. Edited: the stretch showing the instance's login banner (the tester's IP) and Jupyter's startup output (its access token) is cut |
 
 `<ip>` is the instance's public address, 132.145.167.169, now released.
 
