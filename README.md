@@ -31,11 +31,14 @@ The last column also includes the kernel, driver and CUDA updates the installer 
 a running job, applied afterwards with a reboot (`sudo SGS_PATCH_ALL=1 ./install.sh --only updates && sudo reboot`).
 Right after `install.sh` alone the result is 28/33, with those updates waiting.
 
-**Reviewing this quickly:**
-1. Start with the [requirement-to-evidence map](evidence/README.md#requirement--evidence): every claim has a raw
-   file or a recording next to it.
-2. Then read [FINDINGS.md](docs/FINDINGS.md): what the stock image exposes, and what is still open.
-3. The core of the challenge is [`modules/10-ssh-mfa.sh`](modules/10-ssh-mfa.sh) and
+### Reviewing this quickly
+
+1. Watch [What it looks like](#what-it-looks-like): recordings of the stock image and the hardened one, each
+   with the exact text to look for.
+2. Check any claim in the [requirement-to-evidence map](evidence/README.md#requirement--evidence): every claim has
+   a raw file or a recording next to it.
+3. Read [FINDINGS.md](docs/FINDINGS.md): what the stock image exposes, and what is still open.
+4. The core of the challenge is [`modules/10-ssh-mfa.sh`](modules/10-ssh-mfa.sh) and
    [`bin/sgs-enroll`](bin/sgs-enroll).
 
 ## What it looks like
