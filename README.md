@@ -38,25 +38,6 @@ Right after `install.sh` alone the result is 28/33, with those updates waiting.
 3. The core of the challenge is [`modules/10-ssh-mfa.sh`](modules/10-ssh-mfa.sh) and
    [`bin/sgs-enroll`](bin/sgs-enroll).
 
-## The challenge, point by point
-
-| Ask | What was built | Proof |
-|---|---|---|
-| "for each ssh to require a microsoft or google authenticator app approval to get in" | Every new SSH connection needs the key, then a 6-digit code (TOTP, the standard both apps implement). Without both, nobody gets in. There are no passwords and no root login, and accounts that haven't set up a code are refused. | [key alone, before](evidence/media/ssh-before-key-alone-logs-in.gif) · [key + code](evidence/media/ssh-after-key-and-code.gif) · [key alone, refused](evidence/media/ssh-after-key-alone-denied.gif) · [wrong code, refused](evidence/media/ssh-after-wrong-code-denied.gif) · [`sshd_T.txt`](evidence/lambda-a10/after/sshd_T.txt) · [`ssh_server_log.txt`](evidence/lambda-a10/extra/ssh_server_log.txt) |
-| "improve the starting stack that loads with the gpu in ways it can be more secure" | Seven modules on top of Lambda Stack: [SSH](modules/10-ssh-mfa.sh), [firewall](modules/20-firewall.sh), [kernel](modules/30-kernel.sh), [audit trail](modules/40-audit-logging.sh), [updates](modules/50-updates.sh), [GPU and IDE](modules/60-gpu.sh), [ML supply chain](modules/70-supply-chain.sh) | [report](evidence/report.md): 8 → 30 of 33 checks; [GPU smoke test](evidence/lambda-a10/after/gpu_smoke.txt) 3/3 |
-| "compare the images" | The stock Lambda Stack image and the hardened one, audited by the same tool on the same instance: stock, then after install, a kernel update and a reboot | [`evidence/lambda-a10/`](evidence/lambda-a10/) ([before](evidence/lambda-a10/before/) · [after](evidence/lambda-a10/after/)) |
-| "the cheapest gpu" | `gpu_1x_a10` | [instance](evidence/media/lambda-instance-running.png) |
-
-**"Approval" is a code, not a push notification.** Both apps can approve a login in two ways:
-- **A 6-digit code (TOTP).** It's an open standard and works offline: the server checks the code itself.
-- **A push notification you tap.** That requires a cloud identity service (Microsoft Entra ID, Duo, Okta) to send
-  the push, an account with it, and its availability at every login.
-
-For a standalone GPU instance, the code keeps the second factor on the box with no third party in the login
-path. The recordings use Google Authenticator. Microsoft Authenticator implements the same TOTP standard
-(RFC 6238) and adds the same QR code, but it wasn't used in this run. For a team that already runs one of those services, push means swapping the PAM module (for example Duo's
-`pam_duo`); the sshd side stays the same.
-
 ## What it looks like
 
 Recorded on the Lambda A10: once on the **stock image (before)**, once with **Secure GPU Stack installed
@@ -175,6 +156,25 @@ the instance's login banner (the tester's IP) and Jupyter's access token.
 Look for: the QR code for Google or Microsoft Authenticator; the code typed back to confirm it; `ubuntu enrolled`;
 then `SSH now requires key + authenticator code`. The secret only takes effect after a valid code, so a bad scan
 can't lock anyone out. The QR code, secret and emergency codes are blurred.
+
+## The challenge, point by point
+
+| Ask | What was built | Proof |
+|---|---|---|
+| "for each ssh to require a microsoft or google authenticator app approval to get in" | Every new SSH connection needs the key, then a 6-digit code (TOTP, the standard both apps implement). Without both, nobody gets in. There are no passwords and no root login, and accounts that haven't set up a code are refused. | [key alone, before](evidence/media/ssh-before-key-alone-logs-in.gif) · [key + code](evidence/media/ssh-after-key-and-code.gif) · [key alone, refused](evidence/media/ssh-after-key-alone-denied.gif) · [wrong code, refused](evidence/media/ssh-after-wrong-code-denied.gif) · [`sshd_T.txt`](evidence/lambda-a10/after/sshd_T.txt) · [`ssh_server_log.txt`](evidence/lambda-a10/extra/ssh_server_log.txt) |
+| "improve the starting stack that loads with the gpu in ways it can be more secure" | Seven modules on top of Lambda Stack: [SSH](modules/10-ssh-mfa.sh), [firewall](modules/20-firewall.sh), [kernel](modules/30-kernel.sh), [audit trail](modules/40-audit-logging.sh), [updates](modules/50-updates.sh), [GPU and IDE](modules/60-gpu.sh), [ML supply chain](modules/70-supply-chain.sh) | [report](evidence/report.md): 8 → 30 of 33 checks; [GPU smoke test](evidence/lambda-a10/after/gpu_smoke.txt) 3/3 |
+| "compare the images" | The stock Lambda Stack image and the hardened one, audited by the same tool on the same instance: stock, then after install, a kernel update and a reboot | [`evidence/lambda-a10/`](evidence/lambda-a10/) ([before](evidence/lambda-a10/before/) · [after](evidence/lambda-a10/after/)) |
+| "the cheapest gpu" | `gpu_1x_a10` | [instance](evidence/media/lambda-instance-running.png) |
+
+**"Approval" is a code, not a push notification.** Both apps can approve a login in two ways:
+- **A 6-digit code (TOTP).** It's an open standard and works offline: the server checks the code itself.
+- **A push notification you tap.** That requires a cloud identity service (Microsoft Entra ID, Duo, Okta) to send
+  the push, an account with it, and its availability at every login.
+
+For a standalone GPU instance, the code keeps the second factor on the box with no third party in the login
+path. The recordings use Google Authenticator. Microsoft Authenticator implements the same TOTP standard
+(RFC 6238) and adds the same QR code, but it wasn't used in this run. For a team that already runs one of those services, push means swapping the PAM module (for example Duo's
+`pam_duo`); the sshd side stays the same.
 
 ## What each module does
 
