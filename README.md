@@ -31,7 +31,7 @@ run.
 
 ### How to Review this Quickly
 
-1. Watch [What it looks like](#what-it-looks-like): recordings of the stock image and the hardened one, each
+1. Watch [Security in Action](#security-in-action-before-and-after): recordings of the stock image and the hardened one, each
    with the exact text to look for.
 2. Read the [Security Report](evidence/report.md): all 37 checks on the stock image and the hardened one,
    with the evidence file behind each verdict.
@@ -41,7 +41,7 @@ run.
 5. The core of the challenge is [`modules/10-ssh-mfa.sh`](modules/10-ssh-mfa.sh) and
    [`bin/sgs-enroll`](bin/sgs-enroll).
 
-## What it looks like
+## Security in Action: Before and After
 
 Recorded on the Lambda A10: once on the **stock image (before)**, once with **Secure GPU Stack installed
 (after)**. "Look for" quotes the exact text that proves each point. The [evidence index](evidence/README.md#recordings)
