@@ -11,9 +11,9 @@ It is one re-runnable installer (`sudo ./install.sh`) with seven modules, plus a
 instance before and after. Both were run on a real Lambda A10 instance, and every number below comes from that
 run.
 
-[![Before/after summary: 8/33 checks passed on the stock image, 30/33 after](evidence/media/report-summary.png)](evidence/report.md)
+[![Before/after summary: 8/33 checks passed on the stock image, 30/33 after](evidence/media/report-summary.png)](https://talha-riaz.github.io/secure-gpu-stack/evidence/report.html)
 
-[Full Report (Markdown)](evidence/report.md) | [Full Report (HTML)](evidence/report.html)
+[Full Report (Markdown)](evidence/report.md) | [Full Report (HTML)](https://talha-riaz.github.io/secure-gpu-stack/evidence/report.html)
 
 | On a real `gpu_1x_a10`, Lambda Stack 22.04 | Stock image | With Secure GPU Stack |
 |---|---|---|
@@ -33,7 +33,7 @@ run.
 
 1. Watch [Security in Action](#security-in-action-before-and-after): recordings of the stock image and the hardened one, each
    with the exact text to look for.
-2. Read the [Security Report](evidence/report.md): all 37 checks on the stock image and the hardened one,
+2. Read the [Security Report](https://talha-riaz.github.io/secure-gpu-stack/evidence/report.html): all 37 checks on the stock image and the hardened one,
    with the evidence file behind each verdict.
 3. Check any claim in the [requirement-to-evidence map](evidence/README.md#requirement--evidence): every claim has
    a raw file or a recording next to it.
