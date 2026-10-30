@@ -13,6 +13,10 @@ run.
 
 [![Before/after summary: 8/33 checks passed on the stock image, 30/33 after](evidence/media/report-summary.png)](evidence/report.md)
 
+**Full report:** [evidence/report.md](evidence/report.md) (all 37 checks, before and after, with the evidence file
+behind each) · [report.html](evidence/report.html) (the same report as a styled page; download it and open it in a
+browser)
+
 | On a real `gpu_1x_a10`, Lambda Stack 22.04 | Stock image | With Secure GPU Stack |
 |---|---|---|
 | Checks passed ([full report](evidence/report.md)) | 8 / 33 | **30 / 33** |
