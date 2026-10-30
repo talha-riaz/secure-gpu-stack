@@ -13,7 +13,7 @@ run.
 
 [![Before/after summary: 8/33 checks passed on the stock image, 30/33 after](evidence/media/report-summary.png)](https://talha-riaz.github.io/secure-gpu-stack/evidence/report.html)
 
-[Full Report (Markdown)](evidence/report.md) | [Full Report (HTML)](https://talha-riaz.github.io/secure-gpu-stack/evidence/report.html)
+[Full Report (HTML)](https://talha-riaz.github.io/secure-gpu-stack/evidence/report.html) | [Full Report (Markdown)](evidence/report.md)
 
 | On a real `gpu_1x_a10`, Lambda Stack 22.04 | Stock image | With Secure GPU Stack |
 |---|---|---|
