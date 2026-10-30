@@ -33,10 +33,12 @@ run.
 
 1. Watch [What it looks like](#what-it-looks-like): recordings of the stock image and the hardened one, each
    with the exact text to look for.
-2. Check any claim in the [requirement-to-evidence map](evidence/README.md#requirement--evidence): every claim has
+2. Read the [Security Report](evidence/report.md): all 37 checks on the stock image and the hardened one,
+   with the evidence file behind each verdict.
+3. Check any claim in the [requirement-to-evidence map](evidence/README.md#requirement--evidence): every claim has
    a raw file or a recording next to it.
-3. Read [FINDINGS.md](docs/FINDINGS.md): what the stock image exposes, and what is still open.
-4. The core of the challenge is [`modules/10-ssh-mfa.sh`](modules/10-ssh-mfa.sh) and
+4. Read [FINDINGS.md](docs/FINDINGS.md): what the stock image exposes, and what is still open.
+5. The core of the challenge is [`modules/10-ssh-mfa.sh`](modules/10-ssh-mfa.sh) and
    [`bin/sgs-enroll`](bin/sgs-enroll).
 
 ## What it looks like
