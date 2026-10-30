@@ -29,7 +29,7 @@ run.
 | ssh-audit | 6 fail, 16 warn | 0 fail, 5 warn |
 | GPU: CUDA, PyTorch, GPU in containers | works | **works** (smoke test 3/3) |
 
-### Reviewing this quickly
+### How to Review this Quickly
 
 1. Watch [What it looks like](#what-it-looks-like): recordings of the stock image and the hardened one, each
    with the exact text to look for.
